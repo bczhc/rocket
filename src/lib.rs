@@ -11,8 +11,11 @@ macro_rules! mutex_lock {
 
 #[macro_export]
 macro_rules! print_flush {
-    ($e:literal) => {
-        print!($e);
+    () => {
         std::io::Write::flush(&mut std::io::stdout()).unwrap();
+    };
+    ($($arg:tt)*) => {
+        print!($($arg)*);
+        print_flush!();
     };
 }
