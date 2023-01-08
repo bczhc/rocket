@@ -4,7 +4,6 @@ use rocket::form::Form;
 use rocket::response::content::RawJson;
 use rocket::{post, FromForm};
 use serde::Serialize;
-use std::mem;
 use std::sync::Mutex;
 
 static TEXT: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new(String::new()));
