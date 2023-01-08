@@ -4,6 +4,7 @@ use rocket::form::Form;
 use rocket::response::content::RawJson;
 use rocket::{post, FromForm};
 use serde::Serialize;
+use std::mem;
 use std::sync::Mutex;
 
 static TEXT: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new(String::new()));
@@ -24,8 +25,7 @@ pub fn text(text: Option<Form<Input>>) -> RawJson<String> {
     let result_text = match text {
         None => guard.as_str(),
         Some(input) => {
-            guard.clear();
-            guard.push_str(input.text);
+            *guard = input.text.into();
             guard.as_str()
         }
     };
