@@ -7,5 +7,11 @@ fn rocket() -> _ {
 
     println!("Server started");
     use rocket_demo::routes;
-    rocket::build().mount("/", routes![routes::text_transfer::text])
+    rocket::build().mount(
+        "/",
+        routes![
+            routes::text_transfer::text,
+            routes::authentication_demo::authenticate
+        ],
+    )
 }
