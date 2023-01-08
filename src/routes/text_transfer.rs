@@ -1,7 +1,8 @@
 use crate::mutex_lock;
 use once_cell::sync::Lazy;
-use rocket::get;
+use rocket::form::Form;
 use rocket::response::content::RawJson;
+use rocket::{post, FromForm};
 use serde::Serialize;
 use std::sync::Mutex;
 
@@ -12,14 +13,19 @@ struct Response<'a> {
     result: &'a str,
 }
 
-#[get("/text-transfer?<text>")]
-pub fn text(text: Option<&str>) -> RawJson<String> {
+#[derive(FromForm)]
+pub struct Input<'a> {
+    text: &'a str,
+}
+
+#[post("/text-transfer", data = "<text>")]
+pub fn text(text: Option<Form<Input>>) -> RawJson<String> {
     let mut guard = mutex_lock!(TEXT);
     let result_text = match text {
         None => guard.as_str(),
-        Some(set_text) => {
+        Some(input) => {
             guard.clear();
-            guard.push_str(set_text);
+            guard.push_str(input.text);
             guard.as_str()
         }
     };
