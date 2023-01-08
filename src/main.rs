@@ -11,7 +11,8 @@ fn rocket() -> _ {
         "/",
         routes![
             routes::text_transfer::text,
-            routes::authentication_demo::authenticate
+            routes::authentication_demo::authenticate::authenticate,
+            routes::authentication_demo::request::request,
         ],
     )
 }
