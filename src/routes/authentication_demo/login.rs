@@ -2,12 +2,9 @@ use jsonwebtoken::{Algorithm, EncodingKey};
 use rocket::form::Form;
 use rocket::http::Cookie;
 use rocket::{post, FromForm, Responder};
-use rsa::pkcs1::LineEnding;
-use rsa::pkcs8::EncodePrivateKey;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
-use crate::mutex_lock;
-use crate::security::PRIVATE_KEY;
+use crate::routes::authentication_demo::{jwt_secret, JwtClaims};
 
 #[derive(FromForm)]
 pub struct Input<'a> {
@@ -25,13 +22,6 @@ pub struct ResponseData<'a, 'b> {
     status: u8,
     message: &'a str,
     data: Option<Data<'b>>,
-}
-
-#[derive(Serialize, Deserialize)]
-struct Claim<'a> {
-    username: &'a str,
-    /// issued at
-    iat: u64,
 }
 
 #[derive(Responder)]
@@ -78,7 +68,7 @@ impl Response {
     }
 }
 
-#[post("/authenticate", data = "<form>")]
+#[post("/login", data = "<form>")]
 pub fn authenticate(form: Option<Form<Input>>) -> Response {
     let Some(form) = form else {
         return Response::new(ResponseType::InvalidForm)
@@ -89,19 +79,17 @@ pub fn authenticate(form: Option<Form<Input>>) -> Response {
         return Response::new(ResponseType::WrongPassword);
     }
 
-    let pem = mutex_lock!(PRIVATE_KEY)
-        .as_ref()
-        .unwrap()
-        .to_pkcs8_pem(LineEnding::LF)
-        .unwrap();
-    let jwt_secret = pem.as_bytes();
+    let jwt_secret = jwt_secret();
 
     let header = jsonwebtoken::Header::new(Algorithm::HS512);
-    let claim = Claim {
-        iat: jsonwebtoken::get_current_timestamp(),
-        username: form.username,
+    let issued_at = jsonwebtoken::get_current_timestamp();
+    let claim = JwtClaims {
+        iat: issued_at,
+        exp: issued_at + 3600, /* 1h */
+        username: form.username.into(),
     };
-    let jwt = jsonwebtoken::encode(&header, &claim, &EncodingKey::from_secret(jwt_secret)).unwrap();
+    let jwt =
+        jsonwebtoken::encode(&header, &claim, &EncodingKey::from_secret(&jwt_secret)).unwrap();
 
     Response::new(ResponseType::Success { jwt: &jwt })
 }
