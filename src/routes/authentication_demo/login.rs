@@ -1,82 +1,73 @@
+use axum::headers::{Header, HeaderValue, SetCookie};
+use axum::response::IntoResponse;
+use axum::{Form, Json, TypedHeader};
 use jsonwebtoken::{Algorithm, EncodingKey};
-use rocket::form::Form;
-use rocket::http::Cookie;
-use rocket::{post, FromForm, Responder};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::routes::authentication_demo::{jwt_secret, JwtClaims};
 
-#[derive(FromForm)]
-pub struct Input<'a> {
-    username: &'a str,
-    password: &'a str,
+#[derive(Deserialize)]
+pub struct Input {
+    username: String,
+    password: String,
 }
 
 #[derive(Serialize)]
-struct Data<'a> {
-    token: &'a str,
+struct Data {
+    token: String,
 }
 
 #[derive(Serialize)]
-pub struct ResponseData<'a, 'b> {
+pub struct ResponseData {
     status: u8,
-    message: &'a str,
-    data: Option<Data<'b>>,
+    message: &'static str,
+    data: Option<Data>,
 }
 
-#[derive(Responder)]
-#[response(content_type = "json")]
-pub struct Response {
-    json: String,
-    token_cookie: Cookie<'static>,
-}
-
-enum ResponseType<'a> {
-    Success { jwt: &'a str },
+enum ResponseType {
+    Success { jwt: String },
     InvalidForm,
     WrongPassword,
 }
 
-impl Response {
-    fn new(r#type: ResponseType) -> Self {
-        let data = match r#type {
-            ResponseType::Success { jwt } => ResponseData {
-                message: "Login succeeded",
-                status: 0,
-                data: Some(Data { token: jwt }),
-            },
-            ResponseType::WrongPassword => ResponseData {
-                message: "Wrong username or password",
-                status: 1,
-                data: None,
-            },
-            ResponseType::InvalidForm => ResponseData {
-                message: "Invalid form",
-                status: 2,
-                data: None,
-            },
-        };
-        Self {
-            json: serde_json::to_string(&data).unwrap(),
-            token_cookie: Cookie::new(
-                "token",
-                data.data
-                    .map(|x| String::from(x.token))
-                    .unwrap_or(String::default()),
-            ),
-        }
-    }
+fn create_response(r#type: ResponseType) -> (TypedHeader<SetCookie>, Json<ResponseData>) {
+    let data = match r#type {
+        ResponseType::Success { jwt } => ResponseData {
+            message: "Login succeeded",
+            status: 0,
+            data: Some(Data { token: jwt }),
+        },
+        ResponseType::WrongPassword => ResponseData {
+            message: "Wrong username or password",
+            status: 1,
+            data: None,
+        },
+        ResponseType::InvalidForm => ResponseData {
+            message: "Invalid form",
+            status: 2,
+            data: None,
+        },
+    };
+    let token = data
+        .data
+        .as_ref()
+        .map(|x| String::from(&x.token))
+        .unwrap_or(String::default());
+
+    let values = [HeaderValue::from_str(&format!("token={}", token)).unwrap()];
+
+    let header = TypedHeader(SetCookie::decode(&mut values.iter()).unwrap());
+    (header, Json(data))
 }
 
-#[post("/login", data = "<form>")]
-pub fn authenticate(form: Option<Form<Input>>) -> Response {
+pub async fn authenticate(form: Option<Form<Input>>) -> impl IntoResponse {
     let Some(form) = form else {
-        return Response::new(ResponseType::InvalidForm)
+        return create_response(ResponseType::InvalidForm);
     };
 
-    let login_match = check_login((form.username, form.password));
+    let login_match = check_login((&form.username, &form.password));
     if !login_match {
-        return Response::new(ResponseType::WrongPassword);
+        return create_response(ResponseType::WrongPassword);
     }
 
     let jwt_secret = jwt_secret();
@@ -86,12 +77,12 @@ pub fn authenticate(form: Option<Form<Input>>) -> Response {
     let claim = JwtClaims {
         iat: issued_at,
         exp: issued_at + 3600, /* 1h */
-        username: form.username.into(),
+        username: form.username.clone(),
     };
     let jwt =
         jsonwebtoken::encode(&header, &claim, &EncodingKey::from_secret(&jwt_secret)).unwrap();
 
-    Response::new(ResponseType::Success { jwt: &jwt })
+    create_response(ResponseType::Success { jwt })
 }
 
 fn check_login(credential: (&str, &str)) -> bool {

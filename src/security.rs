@@ -8,6 +8,7 @@ pub static PRIVATE_KEY: Lazy<Mutex<Option<RsaPrivateKey>>> = Lazy::new(|| Mutex:
 
 pub fn init() {
     print_flush!("Generating private key... ");
+    #[allow(clippy::needless_late_init)]
     let private_key;
     cfg_if! {
         if #[cfg(debug_assertions)] {
