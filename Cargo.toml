@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 futures = "0.3.25"
 tokio = { version = "1.24.2", features = ["macros", "rt-multi-thread"] }
-axum = { version = "0.6.8", features = ["query", "headers"]}
+axum = { version = "0.6.8", features = ["query", "headers"] }
 axum-extra = { version = "0.5.0", features = ["cookie"] }
 serde = { version = "1.0.152", features = ["derive"] }
 clap = "4.1.1"
@@ -23,3 +23,4 @@ json = "0.12.4"
 rand = "0.8.5"
 cfg-if = "1.0.0"
 anyhow = "1.0.68"
+figment = { version = "0.10.8", features = ["toml", "env"] }

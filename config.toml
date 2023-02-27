@@ -1,0 +1,5 @@
+[server]
+port = 8000
+
+[app]
+ccit_info_file = "/home/bczhc/code/ruby/info"
