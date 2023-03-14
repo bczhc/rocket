@@ -32,6 +32,7 @@ macro_rules! print_flush {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
 pub struct AppConfig {
     pub ccit_info_file: String,
 }
