@@ -2,7 +2,8 @@ use axum::extract::Query;
 use axum::response::IntoResponse;
 
 use crate::routes::server_network_log::{
-    compress_entries, search_entry_range, search_entry_single, Input, LogEntry, Mode,
+    compress_entries, search_entry_range, search_entry_single, write_entries_text, Input, LogEntry,
+    Mode,
 };
 use crate::ResponseJson;
 
@@ -10,7 +11,7 @@ type ResJson = ResponseJson<LogEntry>;
 
 pub async fn get(query: Option<Query<Input>>) -> axum::response::Response {
     let mode: Option<Mode> = try {
-        let query = query?;
+        let query = query.as_ref()?;
         if query.time.contains("..") {
             let mut split = query.time.split("..");
             let from = split.next()?.parse::<u64>().ok()?;
@@ -33,10 +34,18 @@ pub async fn get(query: Option<Query<Input>>) -> axum::response::Response {
             }
             Mode::Range(from, to) => {
                 let entries = search_entry_range(from, to)?;
-                let Ok(data) = compress_entries(&entries) else {
-                    return ResJson::error("Compression failed").into_response();
-                };
-                data.into_response()
+
+                let do_compression = query.map(|x| x.bzip3.unwrap_or(true)).unwrap_or(true);
+                if do_compression {
+                    let Ok(data) = compress_entries(&entries) else {
+                        return ResJson::error("Compression failed").into_response();
+                    };
+                    data.into_response()
+                } else {
+                    let mut string = String::new();
+                    write_entries_text(&entries, &mut string);
+                    string.into_response()
+                }
             }
         }
     };

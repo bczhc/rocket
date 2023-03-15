@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{BufRead, BufReader, BufWriter, Cursor};
+use std::io::{BufRead, BufReader, BufWriter, Cursor, Write};
 use std::str::FromStr;
 
 use anyhow::anyhow;
@@ -15,6 +15,7 @@ pub mod route;
 #[derive(Deserialize, Debug)]
 pub struct Input {
     time: String,
+    bzip3: Option<bool>,
 }
 
 enum Mode {
@@ -134,13 +135,21 @@ pub fn search_entry_single(timestamp: u64) -> anyhow::Result<LogEntry> {
     Ok(entries[index].clone())
 }
 
+fn write_entries_text<W>(entries: &Vec<LogEntry>, writer: &mut W)
+where
+    W: std::fmt::Write,
+{
+    for e in entries {
+        writeln!(writer, "{} {} {}", e.timestamp, e.rx_size, e.tx_size).unwrap();
+    }
+}
+
 pub fn compress_entries(entries: &Vec<LogEntry>) -> anyhow::Result<Vec<u8>> {
     let mut cursor = Cursor::new(Vec::new());
     let mut encoder = Bz3Encoder::new(&mut cursor, 1048576)?;
     let mut writer = BufWriter::new(&mut encoder);
 
     for e in entries {
-        use std::io::Write;
         writeln!(&mut writer, "{} {} {}", e.timestamp, e.rx_size, e.tx_size)?;
     }
     drop(writer);
