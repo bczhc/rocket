@@ -1,9 +1,9 @@
 #![feature(try_blocks)]
 
 use axum::response::{IntoResponse, Response};
+use axum::Json;
 use std::path::Path;
 use std::sync::Mutex;
-use axum::Json;
 
 use figment::providers::{Format, Toml};
 use once_cell::sync::Lazy;
@@ -73,11 +73,14 @@ impl<T> ResponseJson<T>
 where
     T: Serialize,
 {
-    pub fn error(message: String) -> Self {
+    pub fn error<S>(message: S) -> Self
+    where
+        S: Into<String>,
+    {
         Self {
             status: 1,
             data: None,
-            message: Some(message),
+            message: Some(message.into()),
         }
     }
 
