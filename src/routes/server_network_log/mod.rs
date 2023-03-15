@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::CONFIG;
 
+pub mod info;
 pub mod route;
 
 #[derive(Deserialize, Debug)]
@@ -34,6 +35,28 @@ pub struct LogEntry {
     timestamp: u64,
     rx_size: u64,
     tx_size: u64,
+}
+
+impl FromStr for LogEntry {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut split = s.split(' ');
+        let result: Option<Self> = try {
+            let f1 = split.next()?.parse::<u64>().ok()?;
+            let f2 = split.next()?.parse::<u64>().ok()?;
+            let f3 = split.next()?.parse::<u64>().ok()?;
+            Self {
+                timestamp: f1,
+                rx_size: f2,
+                tx_size: f3,
+            }
+        };
+        match result {
+            None => Err(()),
+            Some(r) => Ok(r),
+        }
+    }
 }
 
 pub fn read_entries() -> anyhow::Result<Vec<LogEntry>> {

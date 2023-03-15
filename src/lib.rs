@@ -1,11 +1,13 @@
 #![feature(try_blocks)]
 
+use axum::response::{IntoResponse, Response};
 use std::path::Path;
 use std::sync::Mutex;
+use axum::Json;
 
 use figment::providers::{Format, Toml};
 use once_cell::sync::Lazy;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 pub mod blake3;
 pub mod routes;
@@ -55,4 +57,44 @@ pub fn read_config(config_path: impl AsRef<Path>) -> Config {
         .extract()
         .unwrap();
     config
+}
+
+#[derive(Serialize)]
+pub struct ResponseJson<T>
+where
+    T: Serialize,
+{
+    status: u32,
+    message: Option<String>,
+    data: Option<T>,
+}
+
+impl<T> ResponseJson<T>
+where
+    T: Serialize,
+{
+    pub fn error(message: String) -> Self {
+        Self {
+            status: 1,
+            data: None,
+            message: Some(message),
+        }
+    }
+
+    pub fn ok(data: T) -> Self {
+        Self {
+            status: 0,
+            message: Some("OK".into()),
+            data: Some(data),
+        }
+    }
+}
+
+impl<T> IntoResponse for ResponseJson<T>
+where
+    T: Serialize,
+{
+    fn into_response(self) -> Response {
+        Json(self).into_response()
+    }
 }

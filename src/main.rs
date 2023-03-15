@@ -52,7 +52,14 @@ async fn start() -> anyhow::Result<()> {
             get(routes::authentication_demo::request::request),
         )
         .route("/ccit-info", get(routes::ccit_info::get_info))
-        .route("/server-network-log", get(routes::server_network_log::route::get))
+        .route(
+            "/server-network-log/get",
+            get(routes::server_network_log::route::get),
+        )
+        .route(
+            "/server-network-log/info",
+            get(routes::server_network_log::info::info),
+        )
         .route("/test", get(test_route));
 
     let addr = SocketAddr::new("0.0.0.0".parse().unwrap(), port);
