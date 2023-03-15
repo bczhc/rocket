@@ -3,3 +3,4 @@ port = 8000
 
 [app]
 ccit-info-file = "/home/bczhc/code/ruby/info"
+server-network-log-file = "/home/bczhc/code/rust/rec"

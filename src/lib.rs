@@ -35,6 +35,7 @@ macro_rules! print_flush {
 #[serde(rename_all = "kebab-case")]
 pub struct AppConfig {
     pub ccit_info_file: String,
+    pub server_network_log_file: String,
 }
 
 #[derive(Deserialize, Debug)]
