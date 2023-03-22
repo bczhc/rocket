@@ -60,6 +60,10 @@ async fn start() -> anyhow::Result<()> {
             "/server-network-log/info",
             get(routes::server_network_log::info::info),
         )
+        .route(
+            "/app/some-tools/crash-report",
+            post(routes::app::some_tools::crash_report::upload),
+        )
         .route("/test", get(test_route));
 
     let addr = SocketAddr::new("0.0.0.0".parse().unwrap(), port);

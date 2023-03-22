@@ -38,6 +38,13 @@ macro_rules! print_flush {
 pub struct AppConfig {
     pub ccit_info_file: String,
     pub server_network_log_file: String,
+    pub some_tools: SomeToolsAppConfig,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub struct SomeToolsAppConfig {
+    pub crash_report_dir: String,
 }
 
 #[derive(Deserialize, Debug)]
