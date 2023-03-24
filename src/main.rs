@@ -64,6 +64,7 @@ async fn start() -> anyhow::Result<()> {
             "/app/some-tools/crash-report",
             post(routes::app::some_tools::crash_report::upload),
         )
+        .route("/random", get(routes::random::stream_random))
         .route("/test", get(test_route));
 
     let addr = SocketAddr::new("0.0.0.0".parse().unwrap(), port);
