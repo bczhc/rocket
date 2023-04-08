@@ -14,6 +14,7 @@ pub mod routes;
 pub mod security;
 
 pub static CONFIG: Lazy<Mutex<Option<Config>>> = Lazy::new(|| Mutex::new(None));
+pub static ROUTES: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(Vec::new()));
 
 #[macro_export]
 macro_rules! mutex_lock {

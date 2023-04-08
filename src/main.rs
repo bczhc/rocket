@@ -5,7 +5,7 @@ use axum::routing::{get, post};
 use axum::{headers, Router, TypedHeader};
 use clap::{Arg, Command, ValueHint};
 
-use web_app::{mutex_lock, read_config, CONFIG};
+use web_app::{mutex_lock, read_config, CONFIG, ROUTES};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -40,32 +40,34 @@ async fn start() -> anyhow::Result<()> {
     };
 
     println!("Server started");
+
     use web_app::routes;
-    let app = Router::new()
-        .route("/text-transfer", post(routes::text_transfer::text))
-        .route(
-            "/login",
-            post(routes::authentication_demo::login::authenticate),
-        )
-        .route(
-            "/request",
-            get(routes::authentication_demo::request::request),
-        )
-        .route("/ccit-info", get(routes::ccit_info::get_info))
-        .route(
-            "/server-network-log/get",
-            get(routes::server_network_log::route::get),
-        )
-        .route(
-            "/server-network-log/info",
-            get(routes::server_network_log::info::info),
-        )
-        .route(
-            "/app/some-tools/crash-report",
-            post(routes::app::some_tools::crash_report::upload),
-        )
-        .route("/random", get(routes::random::stream_random))
-        .route("/test", get(test_route));
+    let mut app = Router::new();
+
+    let mut routes_guard = mutex_lock!(ROUTES);
+
+    macro_rules! add_route {
+        (GET $x:expr, $p:expr) => {
+            app = app.route($x, get($p));
+            routes_guard.push(format!("GET {} {}", $x, stringify!($p)));
+        };
+        (POST $x:expr, $p:expr) => {
+            app = app.route($x, post($p));
+            routes_guard.push(format!("POST {} {}", $x, stringify!($p)));
+        };
+    }
+    add_route!(GET "/login", routes::authentication_demo::login::authenticate);
+    add_route!(POST "/text-transfer", routes::text_transfer::text);
+    add_route!(GET "/request", routes::authentication_demo::request::request);
+    add_route!(GET "/ccit-info", routes::ccit_info::get_info);
+    add_route!(GET "/server-network-log/get", routes::server_network_log::route::get);
+    add_route!(GET "/server-network-log/info", routes::server_network_log::info::info);
+    add_route!(GET "/app/some-tools/crash-report", routes::app::some_tools::crash_report::upload);
+    add_route!(GET "/random", routes::random::stream_random);
+    add_route!(GET "/routes", routes::routes::list);
+    add_route!(GET "/test", test_route);
+
+    drop(routes_guard);
 
     let addr = SocketAddr::new("0.0.0.0".parse().unwrap(), port);
     axum::Server::bind(&addr)
