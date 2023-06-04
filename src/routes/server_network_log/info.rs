@@ -56,6 +56,6 @@ pub async fn info() -> R {
     };
     match result {
         Ok(r) => r,
-        Err(e) => R::error(e.to_string()),
+        Err(e) => R::error(1, e.to_string()),
     }
 }

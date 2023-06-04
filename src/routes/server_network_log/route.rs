@@ -23,7 +23,7 @@ pub async fn get(query: Option<Query<Input>>) -> axum::response::Response {
         }
     };
     let Some(mode) = mode else {
-        return ResJson::error("Invalid query").into_response();
+        return ResJson::error(1, "Invalid query").into_response();
     };
 
     let result: anyhow::Result<axum::response::Response> = try {
@@ -38,7 +38,7 @@ pub async fn get(query: Option<Query<Input>>) -> axum::response::Response {
                 let do_compression = query.map(|x| x.bzip3.unwrap_or(true)).unwrap_or(true);
                 if do_compression {
                     let Ok(data) = compress_entries(&entries) else {
-                        return ResJson::error("Compression failed").into_response();
+                        return ResJson::error(1, "Compression failed").into_response();
                     };
                     data.into_response()
                 } else {
@@ -51,6 +51,6 @@ pub async fn get(query: Option<Query<Input>>) -> axum::response::Response {
     };
     match result {
         Ok(r) => r,
-        Err(e) => ResJson::error(e.to_string()).into_response(),
+        Err(e) => ResJson::error(1, e.to_string()).into_response(),
     }
 }

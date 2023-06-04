@@ -62,6 +62,6 @@ pub async fn upload(mut body: BodyStream) -> impl IntoResponse {
 
     match result {
         Ok(_) => ResponseJson::ok(()),
-        Err(e) => ResponseJson::error(format!("{}", e)),
+        Err(e) => ResponseJson::error(1, format!("{}", e)),
     }
 }

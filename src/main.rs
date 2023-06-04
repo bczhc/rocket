@@ -30,8 +30,13 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn start() -> anyhow::Result<()> {
+fn initialize() {
     web_app::security::init();
+    web_app::routes::diary::init();
+}
+
+async fn start() -> anyhow::Result<()> {
+    initialize();
 
     let port = {
         let guard = mutex_lock!(CONFIG);
@@ -66,6 +71,9 @@ async fn start() -> anyhow::Result<()> {
     add_route!(GET "/random", routes::random::stream_random);
     add_route!(GET "/routes", routes::routes::list);
     add_route!(GET "/test", test_route);
+    add_route!(GET "/app/diary/fetch", routes::diary::fetch);
+    add_route!(POST "/app/diary/register", routes::diary::register::register);
+    add_route!(POST "/app/diary/login", routes::diary::login::login);
 
     drop(routes_guard);
 

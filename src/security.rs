@@ -1,23 +1,25 @@
-use crate::{mutex_lock, print_flush};
-use cfg_if::cfg_if;
-use once_cell::sync::Lazy;
-use rsa::RsaPrivateKey;
 use std::sync::Mutex;
 
-pub static PRIVATE_KEY: Lazy<Mutex<Option<RsaPrivateKey>>> = Lazy::new(|| Mutex::new(None));
+use hex::ToHex;
+use once_cell::sync::Lazy;
+use rand::rngs::OsRng;
+use rand::RngCore;
+
+use crate::{lazy_option_initializer, mutex_lock, print_flush, LazyOption};
+
+pub static JWT_SECRET: LazyOption<[u8; 300]> = lazy_option_initializer!();
 
 pub fn init() {
-    print_flush!("Generating private key... ");
-    #[allow(clippy::needless_late_init)]
-    let private_key;
-    cfg_if! {
-        if #[cfg(debug_assertions)] {
-            private_key = RsaPrivateKey::new(&mut rand::thread_rng(), 1024).unwrap();
-        } else {
-            use rand::rngs::OsRng;
-            private_key = RsaPrivateKey::new(&mut OsRng, 4096).unwrap();
-        }
-    }
-    mutex_lock!(PRIVATE_KEY).replace(private_key);
+    print_flush!("Generating JWT secret... ");
+    let mut secret = [0_u8; 300];
+    OsRng.fill_bytes(&mut secret);
+    mutex_lock!(JWT_SECRET).replace(secret);
     println!("done");
+}
+
+pub fn hash_password(pw: &str, salt: &[u8]) -> String {
+    let mut hasher = blake3::Hasher::new();
+    hasher.update(pw.as_bytes());
+    hasher.update(salt);
+    hasher.finalize().as_bytes().encode_hex()
 }

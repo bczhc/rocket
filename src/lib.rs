@@ -13,7 +13,16 @@ pub mod blake3;
 pub mod routes;
 pub mod security;
 
-pub static CONFIG: Lazy<Mutex<Option<Config>>> = Lazy::new(|| Mutex::new(None));
+type LazyOption<T> = Lazy<Mutex<Option<T>>>;
+
+#[macro_export]
+macro_rules! lazy_option_initializer {
+    () => {
+        Lazy::new(|| Mutex::new(None))
+    };
+}
+
+pub static CONFIG: LazyOption<Config> = lazy_option_initializer!();
 pub static ROUTES: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(Vec::new()));
 
 #[macro_export]
@@ -40,12 +49,19 @@ pub struct AppConfig {
     pub ccit_info_file: String,
     pub server_network_log_file: String,
     pub some_tools: SomeToolsAppConfig,
+    pub diary: DiaryConfig,
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct SomeToolsAppConfig {
     pub crash_report_dir: String,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub struct DiaryConfig {
+    pub database_file: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -81,12 +97,12 @@ impl<T> ResponseJson<T>
 where
     T: Serialize,
 {
-    pub fn error<S>(message: S) -> Self
+    pub fn error<S>(status: u32, message: S) -> Self
     where
         S: Into<String>,
     {
         Self {
-            status: 1,
+            status,
             data: None,
             message: Some(message.into()),
         }

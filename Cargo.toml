@@ -27,3 +27,5 @@ figment = { version = "0.10.8", features = ["toml", "env"] }
 bzip3 = { version = "0.2.3", features = ["bundled"] }
 chrono = "0.4.24"
 tokio-util = { version = "0.7.7", features = ["io"] }
+rusqlite = "0.29.0"
+hex = "0.4.3"

@@ -24,13 +24,13 @@ pub async fn get_info() -> ResponseJson<Value> {
             let value = match value {
                 Ok(v) => v,
                 Err(e) => {
-                    return ResponseJson::error(format!("{}", e));
+                    return ResponseJson::error(1, format!("{}", e));
                 }
             };
 
             ResponseJson::ok(value)
         }
-        Err(e) => ResponseJson::error(format!("{}", e)),
+        Err(e) => ResponseJson::error(1, format!("{}", e)),
     };
     response
 }
