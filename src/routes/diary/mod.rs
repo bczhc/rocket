@@ -16,6 +16,7 @@ pub mod create_diary_book;
 pub mod database;
 pub mod login;
 pub mod register;
+pub mod users;
 
 static DATABASE_FILE: Lazy<String> = Lazy::new(|| {
     mutex_lock!(CONFIG)

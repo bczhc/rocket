@@ -29,3 +29,4 @@ chrono = "0.4.24"
 tokio-util = { version = "0.7.7", features = ["io"] }
 rusqlite = "0.29.0"
 hex = "0.4.3"
+paste = "1.0.12"

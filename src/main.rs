@@ -2,7 +2,6 @@ use std::net::SocketAddr;
 
 use axum::extract::Multipart;
 use axum::headers::{Header, HeaderValue};
-use axum::routing::{get, post};
 use axum::{headers, Router, TypedHeader};
 use clap::{Arg, Command, ValueHint};
 
@@ -53,13 +52,12 @@ async fn start() -> anyhow::Result<()> {
     let mut routes_guard = mutex_lock!(ROUTES);
 
     macro_rules! add_route {
-        (GET $x:expr, $p:expr) => {
-            app = app.route($x, get($p));
-            routes_guard.push(format!("GET {} {}", $x, stringify!($p)));
-        };
-        (POST $x:expr, $p:expr) => {
-            app = app.route($x, post($p));
-            routes_guard.push(format!("POST {} {}", $x, stringify!($p)));
+        ($verb:ident $x:literal, $p:expr) => {
+            ::paste::paste! {
+                let verb_name = stringify!($verb);
+                app = app.route($x, ::axum::routing::[<$verb:lower>]($p));
+                routes_guard.push(format!("{} {} {}", verb_name, $x, stringify!($p)));
+            }
         };
     }
     add_route!(GET "/login", routes::authentication_demo::login::authenticate);
@@ -72,9 +70,29 @@ async fn start() -> anyhow::Result<()> {
     add_route!(GET "/random", routes::random::stream_random);
     add_route!(GET "/routes", routes::routes::list);
     add_route!(POST "/test", test_route);
-    add_route!(GET "/app/diary/fetch", routes::diary::fetch);
-    add_route!(POST "/app/diary/register", routes::diary::register::register);
-    add_route!(POST "/app/diary/login", routes::diary::login::login);
+
+    // log in
+    add_route!(POST "/diary/session", routes::diary::login::login);
+    // create user
+    add_route!(POST "/diary/user", routes::diary::users::create_user);
+    // update user profile
+    // TODO
+    add_route!(PATCH "/diary/user", routes::diary::users::create_user);
+    // fetch diary
+    add_route!(GET "/diary/diaries/:id", routes::diary::fetch);
+    // get user profile
+    add_route!(GET "/diary/user/:username", routes::diary::users::user_info);
+    // delete diary
+    add_route!(DELETE "/diary/diary/:id", routes::diary::users::user_info);
+    // list diary books of the session
+    // TODO
+    add_route!(PUT "/diary/books", routes::diary::users::user_info);
+    // list diaries of a diary book
+    // TODO
+    add_route!(GET "/diary/diaries", routes::diary::users::user_info);
+    // delete a diary book
+    // TODO
+    add_route!(GET "/diary/books/:id", routes::diary::users::user_info);
 
     drop(routes_guard);
 
