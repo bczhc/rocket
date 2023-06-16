@@ -17,7 +17,7 @@ pub async fn create_diary_book(
     let claims = get_session!(&cookies);
 
     let database = lock_database!();
-    database.create_diary_book(&form.name, &claims.username);
+    database.create_diary_book(&form.name, claims.user_id);
 
     ResponseJson::ok(()).into()
 }

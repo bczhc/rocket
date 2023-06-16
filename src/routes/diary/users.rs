@@ -1,10 +1,10 @@
 use axum::extract::Path;
-use axum::Form;
 use axum::response::IntoResponse;
+use axum::Form;
 use serde::Serialize;
 
+use crate::routes::diary::{failure_response, hash_password, AuthForm, ResponseStatus};
 use crate::{lock_database, ResponseJson};
-use crate::routes::diary::{AuthForm, failure_response, hash_password, ResponseStatus};
 
 #[derive(Serialize)]
 pub struct UserProfile {
@@ -17,9 +17,13 @@ pub struct UserProfile {
 pub async fn user_info(Path(username): Path<String>) -> impl IntoResponse {
     let database = lock_database!();
 
-    match database.query_user_profile(&username) {
+    let result: Option<UserProfile> = try {
+        let user_id = database.query_user_id(&username)?;
+        database.query_user_profile(user_id)?
+    };
+    match result {
+        Some(a) => ResponseJson::ok(a).into_response(),
         None => failure_response(ResponseStatus::NoRecord).into_response(),
-        Some(x) => ResponseJson::ok(x).into_response(),
     }
 }
 

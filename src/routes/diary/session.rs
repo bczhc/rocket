@@ -41,16 +41,18 @@ pub async fn login(Form(form): Form<AuthForm>) -> impl IntoResponse {
     let database = lock_database!();
     let pw_hash = hash_password(&form.password);
     let valid = database.check_existence(&form.username, Some(&pw_hash));
-    drop(database);
 
     if !valid {
         return failure_response(ResponseStatus::AuthenticationFailed).into_response();
     }
 
-
+    // user must exists here
+    let user_id = database.query_user_id(&form.username).unwrap();
+    drop(database);
     let timestamp = jsonwebtoken::get_current_timestamp();
     let claims = JwtClaims {
         username: form.username.clone(),
+        user_id,
         iat: timestamp,
         exp: timestamp + Duration::days(1).num_seconds() as u64,
     };

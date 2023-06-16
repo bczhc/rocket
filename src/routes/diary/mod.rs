@@ -68,6 +68,7 @@ pub(crate) fn failure_response(status: ResponseStatus) -> impl IntoResponse {
 #[derive(Serialize, Deserialize)]
 pub(crate) struct JwtClaims {
     username: String,
+    user_id: u64,
     /// issued at
     iat: u64,
     /// expired at

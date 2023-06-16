@@ -21,7 +21,8 @@ impl Database {
         conn.execute_batch(
             r#"CREATE TABLE IF NOT EXISTS user
 (
-    username    TEXT    NOT NULL PRIMARY KEY,
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    username    TEXT    NOT NULL UNIQUE,
     pw_hash     TEXT    NOT NULL,
     name        TEXT,
     email       TEXT,
@@ -62,7 +63,7 @@ CREATE TABLE IF NOT EXISTS user_diary_book
     user_id       INTEGER NOT NULL,
     diary_book_id INTEGER NOT NULL,
     FOREIGN KEY (diary_book_id) REFERENCES diary_book (id),
-    FOREIGN KEY (user_id) REFERENCES user (username)
+    FOREIGN KEY (user_id) REFERENCES user (id)
 );
 "#,
         )?;
@@ -124,10 +125,20 @@ CREATE TABLE IF NOT EXISTS user_diary_book
             .unwrap();
     }
 
-    pub fn query_user_profile(&self, username: &str) -> Option<UserProfile> {
+    pub fn query_user_id(&self, username: &str) -> Option<u64> {
+        self.conn
+            .query_row(
+                "SELECT id FROM user WHERE username IS ?",
+                params![username],
+                |r| r.get(0),
+            )
+            .ok()
+    }
+
+    pub fn query_user_profile(&self, id: u64) -> Option<UserProfile> {
         let user_profile = self.conn.query_row(
-            "SELECT signup_time, name, email, username FROM user WHERE username IS ?",
-            params![username],
+            "SELECT signup_time, name, email, username FROM user WHERE id IS ?",
+            params![id],
             |r| {
                 Ok(UserProfile {
                     signup_time: r.get(0)?,
@@ -140,7 +151,7 @@ CREATE TABLE IF NOT EXISTS user_diary_book
         user_profile.ok()
     }
 
-    pub fn create_diary_book(&self, name: &str, username: &str) {
+    pub fn create_diary_book(&self, name: &str, user_id: u64) {
         let book_id = generate_id();
         self.conn
             .execute(
@@ -150,8 +161,8 @@ CREATE TABLE IF NOT EXISTS user_diary_book
             .unwrap();
         self.conn
             .execute(
-                "INSERT INTO user_diary_book (username, diary_book_id) VALUES (?, ?)",
-                params![username, book_id],
+                "INSERT INTO user_diary_book (user_id, diary_book_id) VALUES (?, ?)",
+                params![user_id, book_id],
             )
             .unwrap();
     }
