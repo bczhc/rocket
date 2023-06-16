@@ -72,7 +72,7 @@ async fn start() -> anyhow::Result<()> {
     add_route!(POST "/test", test_route);
 
     // log in
-    add_route!(POST "/diary/session", routes::diary::login::login);
+    add_route!(POST "/diary/session", routes::diary::session::login);
     // create user
     add_route!(POST "/diary/user", routes::diary::users::create_user);
     // update user profile
@@ -84,9 +84,11 @@ async fn start() -> anyhow::Result<()> {
     add_route!(GET "/diary/user/:username", routes::diary::users::user_info);
     // delete diary
     add_route!(DELETE "/diary/diary/:id", routes::diary::users::user_info);
+    // create a diary book
+    add_route!(POST "/diary/books", routes::diary::diary_books::create_diary_book);
     // list diary books of the session
     // TODO
-    add_route!(PUT "/diary/books", routes::diary::users::user_info);
+    add_route!(GET "/diary/books", routes::diary::users::user_info);
     // list diaries of a diary book
     // TODO
     add_route!(GET "/diary/diaries", routes::diary::users::user_info);

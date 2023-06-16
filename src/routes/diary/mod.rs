@@ -11,11 +11,10 @@ use serde::{Deserialize, Serialize};
 use crate::routes::diary::database::{Database, DatabaseInfo};
 use crate::{lazy_option_initializer, mutex_lock, LazyOption, ResponseJson, CONFIG};
 
-pub mod create_diary;
-pub mod create_diary_book;
 pub mod database;
-pub mod login;
-pub mod register;
+pub mod diaries;
+pub mod diary_books;
+pub mod session;
 pub mod users;
 
 static DATABASE_FILE: Lazy<String> = Lazy::new(|| {
@@ -42,12 +41,13 @@ pub struct AuthForm {
     pub password: String,
 }
 
-#[repr(u32)]
+#[repr(u8)]
 #[derive(Copy, Clone)]
 pub enum ResponseStatus {
     Ok = 0,
-    UserExists = 1,
-    AuthenticationFailed = 2,
+    UserExists,
+    AuthenticationFailed,
+    NoRecord,
 }
 
 impl ResponseStatus {
@@ -56,6 +56,7 @@ impl ResponseStatus {
             ResponseStatus::Ok => "User creation succeeded",
             ResponseStatus::UserExists => "User already exists",
             ResponseStatus::AuthenticationFailed => "Authentication failed",
+            ResponseStatus::NoRecord => "No record",
         }
     }
 }
@@ -67,7 +68,6 @@ pub(crate) fn failure_response(status: ResponseStatus) -> impl IntoResponse {
 #[derive(Serialize, Deserialize)]
 pub(crate) struct JwtClaims {
     username: String,
-    user_id: u64,
     /// issued at
     iat: u64,
     /// expired at
@@ -112,4 +112,11 @@ pub(crate) fn timestamp() -> u64 {
 
 pub(crate) fn generate_id() -> u64 {
     OsRng.next_u64()
+}
+
+#[macro_export]
+macro_rules! lock_database {
+    () => {
+        crate::mutex_lock!(crate::routes::diary::DATABASE)
+    };
 }

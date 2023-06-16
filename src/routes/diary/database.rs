@@ -1,3 +1,4 @@
+use crate::routes::diary::users::UserProfile;
 use crate::routes::diary::{generate_id, timestamp};
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
@@ -20,9 +21,10 @@ impl Database {
         conn.execute_batch(
             r#"CREATE TABLE IF NOT EXISTS user
 (
-    user_id     INTEGER NOT NULL PRIMARY KEY,
-    username    TEXT    NOT NULL UNIQUE,
+    username    TEXT    NOT NULL PRIMARY KEY,
     pw_hash     TEXT    NOT NULL,
+    name        TEXT,
+    email       TEXT,
     signup_time INTEGER NOT NULL
 );
 
@@ -60,7 +62,7 @@ CREATE TABLE IF NOT EXISTS user_diary_book
     user_id       INTEGER NOT NULL,
     diary_book_id INTEGER NOT NULL,
     FOREIGN KEY (diary_book_id) REFERENCES diary_book (id),
-    FOREIGN KEY (user_id) REFERENCES user (user_id)
+    FOREIGN KEY (user_id) REFERENCES user (username)
 );
 "#,
         )?;
@@ -116,18 +118,29 @@ CREATE TABLE IF NOT EXISTS user_diary_book
     pub fn add_user(&self, username: &str, pw_hash: &str) {
         self.conn
             .execute(
-                "INSERT INTO user (user_id, username, pw_hash, signup_time) VALUES (?, ?, ?, ?)",
+                "INSERT INTO user (id, username, pw_hash, signup_time) VALUES (?, ?, ?, ?)",
                 params![generate_id(), username, pw_hash, timestamp()],
             )
             .unwrap();
     }
 
-    pub fn query_user_id(&self, username: &str) -> rusqlite::Result<u64> {
-        self.conn
-            .query_row("SELECT user_id FROM user", [], |r| r.get(0))
+    pub fn query_user_profile(&self, username: &str) -> Option<UserProfile> {
+        let user_profile = self.conn.query_row(
+            "SELECT signup_time, name, email, username FROM user WHERE username IS ?",
+            params![username],
+            |r| {
+                Ok(UserProfile {
+                    signup_time: r.get(0)?,
+                    name: r.get(1)?,
+                    email: r.get(2)?,
+                    username: r.get(3)?,
+                })
+            },
+        );
+        user_profile.ok()
     }
 
-    pub fn create_diary_book(&self, name: &str, user_id: u64) {
+    pub fn create_diary_book(&self, name: &str, username: &str) {
         let book_id = generate_id();
         self.conn
             .execute(
@@ -137,8 +150,8 @@ CREATE TABLE IF NOT EXISTS user_diary_book
             .unwrap();
         self.conn
             .execute(
-                "INSERT INTO user_diary_book (user_id, diary_book_id) VALUES (?, ?)",
-                params![user_id, book_id],
+                "INSERT INTO user_diary_book (username, diary_book_id) VALUES (?, ?)",
+                params![username, book_id],
             )
             .unwrap();
     }
