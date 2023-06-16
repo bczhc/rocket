@@ -1,11 +1,15 @@
 use std::sync::Mutex;
+use axum_extra::extract::CookieJar;
 
 use hex::ToHex;
+use jsonwebtoken::{DecodingKey, TokenData, Validation};
 use once_cell::sync::Lazy;
 use rand::rngs::OsRng;
 use rand::RngCore;
+use serde::de::DeserializeOwned;
 
 use crate::{lazy_option_initializer, mutex_lock, print_flush, LazyOption};
+use crate::routes::authentication_demo::jwt_secret;
 
 pub static JWT_SECRET: LazyOption<[u8; 300]> = lazy_option_initializer!();
 
@@ -22,4 +26,24 @@ pub fn hash_password(pw: &str, salt: &[u8]) -> String {
     hasher.update(pw.as_bytes());
     hasher.update(salt);
     hasher.finalize().as_bytes().encode_hex()
+}
+
+pub fn resolve_jwt<C: DeserializeOwned>(cookies: &CookieJar) -> Option<TokenData<C>> {
+    let Some(token) = cookies.get("token").map(|x| x.value()) else {
+        return None;
+    };
+
+    let jwt_secret = jwt_secret();
+    let Ok(header) = jsonwebtoken::decode_header(token) else {
+        return None;
+    };
+    let Ok(claims) = jsonwebtoken::decode::<C>(
+        token,
+        &DecodingKey::from_secret(&jwt_secret),
+        &Validation::new(header.alg.clone()),
+    ) else {
+        return None;
+    };
+
+    Some(claims)
 }

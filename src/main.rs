@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 
+use axum::extract::Multipart;
 use axum::headers::{Header, HeaderValue};
 use axum::routing::{get, post};
 use axum::{headers, Router, TypedHeader};
@@ -70,7 +71,7 @@ async fn start() -> anyhow::Result<()> {
     add_route!(GET "/app/some-tools/crash-report", routes::app::some_tools::crash_report::upload);
     add_route!(GET "/random", routes::random::stream_random);
     add_route!(GET "/routes", routes::routes::list);
-    add_route!(GET "/test", test_route);
+    add_route!(POST "/test", test_route);
     add_route!(GET "/app/diary/fetch", routes::diary::fetch);
     add_route!(POST "/app/diary/register", routes::diary::register::register);
     add_route!(POST "/app/diary/login", routes::diary::login::login);
@@ -84,13 +85,12 @@ async fn start() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn test_route() -> (TypedHeader<headers::SetCookie>, &'static str) {
-    let values = vec![
-        HeaderValue::from_static("A=1"),
-        HeaderValue::from_static("B=2"),
-    ];
-    (
-        TypedHeader(headers::SetCookie::decode(&mut values.iter()).unwrap()),
-        "hello",
-    )
+async fn test_route(mut multipart: Multipart) {
+    while let Some(f) = multipart.next_field().await.unwrap() {
+        // println!("{:?}", f);
+        let name = f.name().map(|x| x.to_string());
+        println!("{:?}", f.headers().get("Content-Transfer-EncodinG"));
+        let bytes = f.bytes().await.unwrap().to_vec();
+        println!("{:?}", (name, bytes));
+    }
 }

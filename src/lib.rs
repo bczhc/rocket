@@ -125,3 +125,9 @@ where
         Json(self).into_response()
     }
 }
+
+impl<T: Serialize> Into<Response> for ResponseJson<T> {
+    fn into(self) -> Response {
+        self.into_response()
+    }
+}

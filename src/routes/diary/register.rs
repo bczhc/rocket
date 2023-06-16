@@ -12,7 +12,7 @@ pub async fn register(Form(form): Form<AuthForm>) -> impl IntoResponse {
     let pw_hash = hash_password(&form.password);
     let database = mutex_lock!(DATABASE);
 
-    if database.check_existence(&form.username) {
+    if database.check_existence(&form.username, None) {
         // user exists
         return failure_response(ResponseStatus::UserExists).into_response();
     }

@@ -11,6 +11,8 @@ use serde::{Deserialize, Serialize};
 use crate::routes::diary::database::{Database, DatabaseInfo};
 use crate::{lazy_option_initializer, mutex_lock, LazyOption, ResponseJson, CONFIG};
 
+pub mod create_diary;
+pub mod create_diary_book;
 pub mod database;
 pub mod login;
 pub mod register;
@@ -64,6 +66,7 @@ pub(crate) fn failure_response(status: ResponseStatus) -> impl IntoResponse {
 #[derive(Serialize, Deserialize)]
 pub(crate) struct JwtClaims {
     username: String,
+    user_id: u64,
     /// issued at
     iat: u64,
     /// expired at
@@ -96,4 +99,16 @@ pub fn init() {
     let info = database.fetch_info().unwrap();
     let salt = hex::decode(&info.hash_salt).expect("Malformed salt string");
     mutex_lock!(SALT).replace(salt.try_into().expect("Wrong salt length"));
+}
+
+/// Timestamp in milliseconds
+pub(crate) fn timestamp() -> u64 {
+    chrono::Utc::now()
+        .timestamp_millis()
+        .try_into()
+        .expect("Timestamp error")
+}
+
+pub(crate) fn generate_id() -> u64 {
+    OsRng.next_u64()
 }

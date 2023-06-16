@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 futures = "0.3.25"
 tokio = { version = "1.24.2", features = ["macros", "rt-multi-thread", "io-util"] }
-axum = { version = "0.6.8", features = ["query", "headers"] }
+axum = { version = "0.6.8", features = ["query", "headers", "multipart"] }
 axum-extra = { version = "0.5.0", features = ["cookie"] }
 serde = { version = "1.0.152", features = ["derive"] }
 clap = "4.1.1"

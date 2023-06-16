@@ -1,39 +1,28 @@
 use axum::http::StatusCode;
+use axum::response::IntoResponse;
 use axum::Json;
 use axum_extra::extract::CookieJar;
-use jsonwebtoken::{DecodingKey, Validation};
 use serde::Serialize;
 
-use crate::routes::authentication_demo::{jwt_secret, JwtClaims};
+use crate::routes::authentication_demo::JwtClaims;
+use crate::security::resolve_jwt;
+use crate::ResponseJson;
 
 #[derive(Serialize)]
 pub struct ResponseData {
     username: Option<String>,
 }
 
-pub async fn request(cookies: CookieJar) -> (StatusCode, Json<ResponseData>) {
+pub async fn request(cookies: CookieJar) -> impl IntoResponse {
     let forbidden_status = || (StatusCode::FORBIDDEN, Json(ResponseData { username: None }));
 
-    let Some(token) = cookies.get("token").map(|x| x.value()) else {
-        return forbidden_status()
+    let jwt = resolve_jwt::<JwtClaims>(&cookies);
+    let Some(claims) = jwt else {
+        return forbidden_status().into_response();
     };
 
-    let jwt_secret = jwt_secret();
-    let Ok(header) = jsonwebtoken::decode_header(token) else {
-        return forbidden_status()
-    };
-    let Ok(claims) = jsonwebtoken::decode::<JwtClaims>(
-        token,
-        &DecodingKey::from_secret(&jwt_secret),
-        &Validation::new(header.alg.clone()),
-    ) else {
-        return forbidden_status()
-    };
-
-    (
-        StatusCode::OK,
-        Json(ResponseData {
-            username: Some(claims.claims.username),
-        }),
-    )
+    ResponseJson::ok(ResponseData {
+        username: Some(claims.claims.username),
+    })
+    .into_response()
 }
