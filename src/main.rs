@@ -70,6 +70,7 @@ async fn start() -> anyhow::Result<()> {
     add_route!(GET "/random", routes::random::stream_random);
     add_route!(GET "/routes", routes::routes::list);
     add_route!(POST "/test", test_route);
+    add_route!(GET "/html2canvas-demo", routes::html2canvas_demo::generate_image);
 
     // log in
     add_route!(POST "/diary/session", routes::diary::session::login);

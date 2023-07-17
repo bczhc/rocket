@@ -6,3 +6,4 @@ pub mod routes;
 pub mod server_network_log;
 pub mod text_transfer;
 pub mod diary;
+pub mod html2canvas_demo;
