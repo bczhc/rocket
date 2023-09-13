@@ -60,7 +60,7 @@ async fn start() -> anyhow::Result<()> {
             }
         };
     }
-    add_route!(GET "/login", routes::authentication_demo::login::authenticate);
+    add_route!(POST "/login", routes::authentication_demo::login::authenticate);
     add_route!(POST "/text-transfer", routes::text_transfer::text);
     add_route!(GET "/request", routes::authentication_demo::request::request);
     add_route!(GET "/ccit-info", routes::ccit_info::get_info);
