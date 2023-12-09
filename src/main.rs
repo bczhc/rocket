@@ -3,25 +3,15 @@ use std::net::SocketAddr;
 use axum::extract::Multipart;
 use axum::headers::{Header, HeaderValue};
 use axum::{headers, Router, TypedHeader};
-use clap::{Arg, Command, ValueHint};
+use clap::{Arg, Command, Parser, ValueHint};
 
 use web_app::{mutex_lock, read_config, CONFIG, ROUTES};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let matches = Command::new("web-app")
-        .arg(
-            Arg::new("config")
-                .default_value("./config.toml")
-                .short('c')
-                .long("config")
-                .value_hint(ValueHint::FilePath),
-        )
-        .get_matches();
+    let args = web_app::cli::Args::parse();
 
-    let config_path = matches.get_one::<String>("config").unwrap();
-
-    let config = read_config(config_path);
+    let config = read_config(args.config)?;
     println!("Config: {:?}", config);
 
     mutex_lock!(CONFIG).replace(config);

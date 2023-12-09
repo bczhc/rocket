@@ -10,6 +10,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 pub mod blake3;
+pub mod cli;
 pub mod routes;
 pub mod security;
 
@@ -76,12 +77,10 @@ pub struct Config {
     pub server: ServerConfig,
 }
 
-pub fn read_config(config_path: impl AsRef<Path>) -> Config {
-    let config: Config = figment::Figment::new()
+pub fn read_config(config_path: impl AsRef<Path>) -> anyhow::Result<Config> {
+    Ok(figment::Figment::new()
         .merge(Toml::file(config_path))
-        .extract()
-        .unwrap();
-    config
+        .extract()?)
 }
 
 #[derive(Serialize)]
