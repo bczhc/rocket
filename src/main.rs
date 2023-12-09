@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use std::net::SocketAddr;
 
 use axum::extract::Multipart;
@@ -11,6 +12,12 @@ use web_app::{mutex_lock, read_config, CONFIG, ROUTES};
 async fn main() -> anyhow::Result<()> {
     let args = web_app::cli::Args::parse();
 
+    if !args.config.exists() {
+        return Err(anyhow!(
+            "Config file doesn't exist: {}",
+            args.config.display()
+        ));
+    }
     let config = read_config(args.config)?;
     println!("Config: {:?}", config);
 
