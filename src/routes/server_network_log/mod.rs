@@ -4,6 +4,8 @@ use std::str::FromStr;
 
 use anyhow::anyhow;
 use axum::response::IntoResponse;
+use axum::routing::get;
+use axum::Router;
 use bzip3::write::Bz3Encoder;
 use serde::{Deserialize, Serialize};
 
@@ -155,4 +157,8 @@ pub fn compress_entries(entries: &Vec<LogEntry>) -> anyhow::Result<Vec<u8>> {
     drop(writer);
     drop(encoder);
     Ok(cursor.into_inner())
+}
+
+pub fn router() -> Router {
+    Router::new().route("/", get(route::get))
 }

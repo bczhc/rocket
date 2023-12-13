@@ -2,12 +2,15 @@ use std::sync::Mutex;
 
 use axum::extract::Query;
 use axum::response::IntoResponse;
+use axum::routing::{get, post};
+use axum::Router;
 use hex::ToHex;
 use once_cell::sync::Lazy;
 use rand::rngs::OsRng;
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 
+use crate::routes::diary;
 use crate::routes::diary::database::{Database, DatabaseInfo};
 use crate::{lazy_option_initializer, mutex_lock, LazyOption, ResponseJson, CONFIG};
 
@@ -113,6 +116,41 @@ pub(crate) fn timestamp() -> u64 {
 
 pub(crate) fn generate_id() -> u64 {
     OsRng.next_u64()
+}
+
+pub fn router() -> Router {
+    Router::new()
+        /*
+        // log in
+        add_route!(POST "/diary/session", routes::diary::session::login);
+        // create user
+        add_route!(POST "/diary/user", routes::diary::users::create_user);
+        // update user profile
+        // TODO
+        add_route!(PATCH "/diary/user", routes::diary::users::create_user);
+        // fetch diary
+        add_route!(GET "/diary/diaries/:id", routes::diary::fetch);
+        // get user profile
+        add_route!(GET "/diary/user/:username", routes::diary::users::user_info);
+        // delete diary
+        add_route!(DELETE "/diary/diary/:id", routes::diary::users::user_info);
+        // create a diary book
+        add_route!(POST "/diary/books", routes::diary::diary_books::create_diary_book);
+        // list diary books of the session
+        // TODO
+        add_route!(GET "/diary/books", routes::diary::users::user_info);
+        // list diaries of a diary book
+        // TODO
+        add_route!(GET "/diary/diaries", routes::diary::users::user_info);
+        // delete a diary book
+        // TODO
+        add_route!(GET "/diary/books/:id", routes::diary::users::user_info);
+        */
+        // TODO: review and redesign
+        .route("/session", post(session::login))
+        .route("/user", post(users::create_user).patch(users::create_user))
+        .route("/diary/:id", get(fetch))
+        .route("/user/:username", get(users::user_info))
 }
 
 #[macro_export]

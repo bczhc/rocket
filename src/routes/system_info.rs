@@ -1,5 +1,6 @@
 use axum::response::IntoResponse;
-use axum::Json;
+use axum::{Json, Router};
+use axum::routing::get;
 use bytesize::ByteSize;
 use chrono::Duration;
 use serde::Serialize;
@@ -76,6 +77,10 @@ fn format_uptime(duration: Duration) -> String {
 
 pub async fn system_info() -> impl IntoResponse {
     Json(get_system_info())
+}
+
+pub fn router() -> Router {
+    Router::new().route("/", get(system_info))
 }
 
 #[test]

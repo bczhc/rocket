@@ -4,7 +4,7 @@ use axum::Json;
 use axum_extra::extract::CookieJar;
 use serde::Serialize;
 
-use crate::routes::authentication_demo::JwtClaims;
+use crate::routes::demo::authentication::JwtClaims;
 use crate::security::resolve_jwt;
 use crate::ResponseJson;
 

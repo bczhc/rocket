@@ -1,3 +1,5 @@
+use axum::routing::{get, post};
+use axum::Router;
 use rsa::pkcs8::EncodePrivateKey;
 use serde::{Deserialize, Serialize};
 
@@ -18,4 +20,10 @@ pub(crate) struct JwtClaims {
 
 pub(crate) fn jwt_secret() -> Vec<u8> {
     mutex_lock!(JWT_SECRET).unwrap().into()
+}
+
+pub fn router() -> Router {
+    Router::new()
+        .route("/login", post(login::authenticate))
+        .route("/request", get(request::request))
 }

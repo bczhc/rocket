@@ -1,12 +1,12 @@
-use anyhow::anyhow;
+#![feature(decl_macro)]
+
 use std::net::SocketAddr;
 
-use axum::extract::Multipart;
-use axum::headers::{Header, HeaderValue};
-use axum::{headers, Router, TypedHeader};
-use clap::{Arg, Command, Parser, ValueHint};
+use anyhow::anyhow;
+use axum::Router;
+use clap::Parser;
 
-use web_app::{mutex_lock, read_config, CONFIG, ROUTES};
+use web_app::{mutex_lock, read_config, CONFIG};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -43,59 +43,7 @@ async fn start() -> anyhow::Result<()> {
 
     println!("Server started");
 
-    use web_app::routes;
-    let mut app = Router::new();
-
-    let mut routes_guard = mutex_lock!(ROUTES);
-
-    macro_rules! add_route {
-        ($verb:ident $x:literal, $p:expr) => {
-            ::paste::paste! {
-                let verb_name = stringify!($verb);
-                app = app.route($x, ::axum::routing::[<$verb:lower>]($p));
-                routes_guard.push(format!("{} {} {}", verb_name, $x, stringify!($p)));
-            }
-        };
-    }
-    add_route!(POST "/login", routes::authentication_demo::login::authenticate);
-    add_route!(POST "/text-transfer", routes::text_transfer::text);
-    add_route!(GET "/request", routes::authentication_demo::request::request);
-    add_route!(GET "/ccit-info", routes::ccit_info::get_info);
-    add_route!(GET "/server-network-log/get", routes::server_network_log::route::get);
-    add_route!(GET "/server-network-log/info", routes::server_network_log::info::info);
-    add_route!(GET "/app/some-tools/crash-report", routes::app::some_tools::crash_report::upload);
-    add_route!(GET "/random", routes::random::stream_random);
-    add_route!(GET "/routes", routes::routes::list);
-    add_route!(POST "/test", test_route);
-    add_route!(GET "/html2canvas-demo", routes::html2canvas_demo::generate_image);
-    add_route!(GET "/sys-info", routes::system_info::system_info);
-
-    // log in
-    add_route!(POST "/diary/session", routes::diary::session::login);
-    // create user
-    add_route!(POST "/diary/user", routes::diary::users::create_user);
-    // update user profile
-    // TODO
-    add_route!(PATCH "/diary/user", routes::diary::users::create_user);
-    // fetch diary
-    add_route!(GET "/diary/diaries/:id", routes::diary::fetch);
-    // get user profile
-    add_route!(GET "/diary/user/:username", routes::diary::users::user_info);
-    // delete diary
-    add_route!(DELETE "/diary/diary/:id", routes::diary::users::user_info);
-    // create a diary book
-    add_route!(POST "/diary/books", routes::diary::diary_books::create_diary_book);
-    // list diary books of the session
-    // TODO
-    add_route!(GET "/diary/books", routes::diary::users::user_info);
-    // list diaries of a diary book
-    // TODO
-    add_route!(GET "/diary/diaries", routes::diary::users::user_info);
-    // delete a diary book
-    // TODO
-    add_route!(GET "/diary/books/:id", routes::diary::users::user_info);
-
-    drop(routes_guard);
+    let app = router();
 
     let addr = SocketAddr::new("0.0.0.0".parse().unwrap(), port);
     axum::Server::bind(&addr)
@@ -104,12 +52,23 @@ async fn start() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn test_route(mut multipart: Multipart) {
-    while let Some(f) = multipart.next_field().await.unwrap() {
-        // println!("{:?}", f);
-        let name = f.name().map(|x| x.to_string());
-        println!("{:?}", f.headers().get("Content-Transfer-EncodinG"));
-        let bytes = f.bytes().await.unwrap().to_vec();
-        println!("{:?}", (name, bytes));
+fn router() -> Router {
+    let router = Router::new();
+    macro nest_module($($x:tt),+ $(,)?) {
+        router
+        $(
+            .nest(concat!("/", stringify!($x)), web_app::routes:: $x ::router())
+        )*
     }
+
+    nest_module!(
+        app,
+        demo,
+        diary,
+        server_network_log,
+        ccit_info,
+        random,
+        system_info,
+        text_transfer
+    )
 }

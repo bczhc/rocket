@@ -1,5 +1,5 @@
-use std::sync::Mutex;
 use axum_extra::extract::CookieJar;
+use std::sync::Mutex;
 
 use hex::ToHex;
 use jsonwebtoken::{DecodingKey, TokenData, Validation};
@@ -8,8 +8,8 @@ use rand::rngs::OsRng;
 use rand::RngCore;
 use serde::de::DeserializeOwned;
 
+use crate::routes::demo::authentication::jwt_secret;
 use crate::{lazy_option_initializer, mutex_lock, print_flush, LazyOption};
-use crate::routes::authentication_demo::jwt_secret;
 
 pub static JWT_SECRET: LazyOption<[u8; 300]> = lazy_option_initializer!();
 

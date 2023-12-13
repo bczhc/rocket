@@ -7,6 +7,8 @@ use axum::extract::Query;
 use axum::headers::{HeaderMap, HeaderValue};
 use axum::http::header;
 use axum::response::{IntoResponse, Response};
+use axum::routing::get;
+use axum::Router;
 use serde::Deserialize;
 
 use crate::{mutex_lock, ResponseJson, CONFIG};
@@ -67,4 +69,8 @@ pub async fn generate_image(query: Option<Query<QueryData>>) -> impl IntoRespons
         Ok(r) => r,
         Err(e) => ResponseJson::<()>::error(1, format!("{}", e)).into_response(),
     };
+}
+
+pub fn router() -> Router {
+    Router::new().route("/image", get(generate_image))
 }

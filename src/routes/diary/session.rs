@@ -1,10 +1,10 @@
 use axum_extra::extract::CookieJar;
 
-use crate::security::resolve_jwt;
-use crate::routes::authentication_demo::jwt_secret;
+use crate::routes::demo::authentication::jwt_secret;
 use crate::routes::diary::{
     failure_response, hash_password, AuthForm, JwtClaims, ResponseStatus, DATABASE,
 };
+use crate::security::resolve_jwt;
 use crate::{lock_database, mutex_lock, ResponseJson};
 use axum::headers::{Header, HeaderValue, SetCookie};
 use axum::response::IntoResponse;
@@ -67,4 +67,3 @@ pub async fn login(Form(form): Form<AuthForm>) -> impl IntoResponse {
     let data = ResponseData { jwt: claims };
     (header, ResponseJson::ok(data)).into_response()
 }
-

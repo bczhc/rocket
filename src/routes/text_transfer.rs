@@ -1,7 +1,8 @@
 use std::sync::Mutex;
 
 use axum::response::IntoResponse;
-use axum::{Form, Json};
+use axum::{Form, Json, Router};
+use axum::routing::get;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
@@ -31,4 +32,9 @@ pub async fn text(text: Option<Form<Input>>) -> impl IntoResponse {
     Json(Response {
         result: result_text,
     })
+}
+
+pub fn router() -> Router {
+    Router::new()
+        .route("/", get(text).post(text))
 }

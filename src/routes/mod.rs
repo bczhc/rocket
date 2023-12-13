@@ -1,10 +1,17 @@
+use axum::Router;
+
 pub mod app;
-pub mod authentication_demo;
 pub mod ccit_info;
+pub mod demo;
 pub mod diary;
-pub mod html2canvas_demo;
 pub mod random;
-pub mod routes;
 pub mod server_network_log;
 pub mod system_info;
 pub mod text_transfer;
+
+pub fn router() -> Router {
+    Router::new()
+        .nest("/app", app::router())
+        .nest("/demo", demo::router())
+        .nest("/server-network-log", server_network_log::router())
+}

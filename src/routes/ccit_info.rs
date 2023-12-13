@@ -1,6 +1,8 @@
 use std::fs::File;
 use std::io;
 use std::io::Read;
+use axum::Router;
+use axum::routing::get;
 
 use serde_json::Value;
 
@@ -33,4 +35,9 @@ pub async fn get_info() -> ResponseJson<Value> {
         Err(e) => ResponseJson::error(1, format!("{}", e)),
     };
     response
+}
+
+pub fn router() -> Router {
+    Router::new()
+        .route("/", get(get_info))
 }

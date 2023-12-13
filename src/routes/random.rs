@@ -7,6 +7,8 @@ use axum::extract::Query;
 use axum::headers::HeaderMap;
 use axum::http::header;
 use axum::response::IntoResponse;
+use axum::Router;
+use axum::routing::get;
 use rand::rngs::OsRng;
 use rand::RngCore;
 use serde::Deserialize;
@@ -64,4 +66,9 @@ pub async fn stream_random(Query(query): Query<Form>) -> impl IntoResponse {
     header_map.insert(header::CONTENT_LENGTH, query.size.into());
 
     (header_map, response)
+}
+
+pub fn router() -> Router {
+    Router::new()
+        .route("/", get(stream_random))
 }

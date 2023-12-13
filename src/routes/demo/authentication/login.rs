@@ -1,10 +1,9 @@
+use crate::routes::demo::authentication::{jwt_secret, JwtClaims};
 use axum::headers::{Header, HeaderValue, SetCookie};
 use axum::response::IntoResponse;
 use axum::{Form, Json, TypedHeader};
 use jsonwebtoken::{Algorithm, EncodingKey};
 use serde::{Deserialize, Serialize};
-
-use crate::routes::authentication_demo::{jwt_secret, JwtClaims};
 
 #[derive(Deserialize)]
 pub struct Input {
