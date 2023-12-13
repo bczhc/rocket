@@ -68,6 +68,7 @@ pub struct DiaryConfig {
 
 #[derive(Deserialize, Debug)]
 pub struct ServerConfig {
+    pub addr: Option<String>,
     pub port: u16,
 }
 

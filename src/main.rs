@@ -30,22 +30,29 @@ async fn main() -> anyhow::Result<()> {
 fn initialize() {
     web_app::security::init();
     web_app::routes::diary::init();
+    web_app::routes::system_info::start_update_thread();
 }
 
 async fn start() -> anyhow::Result<()> {
     initialize();
 
-    let port = {
+    let (addr, port) = {
         let guard = mutex_lock!(CONFIG);
         let config = guard.as_ref().unwrap();
-        config.server.port
+
+        let addr = config
+            .server
+            .addr
+            .clone()
+            .unwrap_or_else(|| String::from("0.0.0.0"));
+        let port = config.server.port;
+        (addr, port)
     };
 
-    println!("Server started");
-    web_app::routes::system_info::start_update_thread();
     let app = router();
 
-    let addr = SocketAddr::new("0.0.0.0".parse().unwrap(), port);
+    let addr = SocketAddr::new(addr.parse()?, port);
+    println!("Server started on {}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await?;
