@@ -42,7 +42,7 @@ async fn start() -> anyhow::Result<()> {
     };
 
     println!("Server started");
-
+    web_app::routes::system_info::start_update_thread();
     let app = router();
 
     let addr = SocketAddr::new("0.0.0.0".parse().unwrap(), port);
