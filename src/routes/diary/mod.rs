@@ -19,13 +19,16 @@ pub mod session;
 pub mod user;
 
 static DATABASE_FILE: Lazy<String> = Lazy::new(|| {
-    mutex_lock!(CONFIG)
-        .as_ref()
-        .unwrap()
-        .app
-        .diary
-        .database_file
-        .clone()
+    // mutex_lock!(CONFIG)
+    //     .as_ref()
+    //     .unwrap()
+    //     .app
+    //     .diary
+    //     .unwrap()
+    //     .database_file
+    //     .clone()
+    // TODO
+    String::default()
 });
 static DATABASE: Lazy<Mutex<Database>> =
     Lazy::new(|| Mutex::new(Database::new(&*DATABASE_FILE).unwrap()));
@@ -113,6 +116,10 @@ pub(crate) fn generate_id() -> u64 {
 }
 
 pub fn router() -> Router {
+    let guard = CONFIG.lock().unwrap();
+    if guard.app.diary.is_none() {
+        return Router::new();
+    }
     Router::new()
         /* --------------- user --------------- */
         .route("/user", post(user::create_user).patch(user::update_user))

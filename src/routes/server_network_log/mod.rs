@@ -64,7 +64,7 @@ impl FromStr for LogEntry {
 
 pub fn read_entries() -> anyhow::Result<Vec<LogEntry>> {
     let guard = CONFIG.lock().unwrap();
-    let network_log_file = &guard.as_ref().unwrap().app.server_network_log_file;
+    let network_log_file = &guard.app.server_network_log_file.as_ref().unwrap();
     let file = File::open(network_log_file)?;
     drop(guard);
 
@@ -160,5 +160,9 @@ pub fn compress_entries(entries: &Vec<LogEntry>) -> anyhow::Result<Vec<u8>> {
 }
 
 pub fn router() -> Router {
+    let guard = CONFIG.lock().unwrap();
+    if guard.app.server_network_log_file.is_none() {
+        return Router::new();
+    }
     Router::new().route("/", get(route::get))
 }

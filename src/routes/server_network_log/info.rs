@@ -19,7 +19,7 @@ type R = ResponseJson<Info>;
 
 pub async fn info() -> R {
     let guard = mutex_lock!(CONFIG);
-    let log_file = &guard.as_ref().unwrap().app.server_network_log_file;
+    let log_file = guard.app.server_network_log_file.as_ref().unwrap();
     let result: anyhow::Result<R> = try {
         let file = File::open(log_file)?;
         let reader = BufReader::new(file);

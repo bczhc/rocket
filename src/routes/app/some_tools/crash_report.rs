@@ -1,29 +1,25 @@
 use std::fs::{create_dir, File};
 use std::io;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::anyhow;
 use axum::extract::BodyStream;
 use axum::response::IntoResponse;
 use chrono::Utc;
 use futures::StreamExt;
-use once_cell::sync::Lazy;
 use serde::Serialize;
 
 use crate::routes::app::some_tools::decompress_bzip3;
-use crate::{ResponseJson, CONFIG};
-
-static OUTPUT_DIR: Lazy<PathBuf> = Lazy::new(|| {
-    let guard = CONFIG.lock().unwrap();
-    PathBuf::from(&guard.as_ref().unwrap().app.some_tools.crash_report_dir)
-});
+use crate::{mutex_lock, ResponseJson, CONFIG};
 
 #[derive(Serialize)]
 struct Response {}
 
 fn write_to_file(content: &[u8]) -> io::Result<()> {
-    let path = OUTPUT_DIR.as_path();
+    let guard = mutex_lock!(CONFIG);
+    let path = &guard.app.some_tools.as_ref().unwrap().crash_report_dir;
+    let path = Path::new(path);
     if !path.exists() {
         create_dir(path)?;
     }

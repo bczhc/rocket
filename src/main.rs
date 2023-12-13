@@ -21,7 +21,7 @@ async fn main() -> anyhow::Result<()> {
     let config = read_config(args.config)?;
     println!("Config: {:?}", config);
 
-    mutex_lock!(CONFIG).replace(config);
+    *CONFIG.lock().unwrap() = config;
 
     start().await?;
     Ok(())
@@ -38,7 +38,7 @@ async fn start() -> anyhow::Result<()> {
 
     let (addr, port) = {
         let guard = mutex_lock!(CONFIG);
-        let config = guard.as_ref().unwrap();
+        let config = &*guard;
 
         let addr = config
             .server

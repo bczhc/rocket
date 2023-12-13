@@ -23,7 +23,7 @@ macro_rules! lazy_option_initializer {
     };
 }
 
-pub static CONFIG: LazyOption<Config> = lazy_option_initializer!();
+pub static CONFIG: Lazy<Mutex<Config>> = Lazy::new(|| Mutex::new(Default::default()));
 pub static ROUTES: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(Vec::new()));
 
 #[macro_export]
@@ -44,14 +44,14 @@ macro_rules! print_flush {
     };
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Default)]
 #[serde(rename_all = "kebab-case")]
 pub struct AppConfig {
-    pub ccit_info_file: String,
-    pub server_network_log_file: String,
-    pub html2canvas_demo_port: u16,
-    pub some_tools: SomeToolsAppConfig,
-    pub diary: DiaryConfig,
+    pub ccit_info_file: Option<String>,
+    pub server_network_log_file: Option<String>,
+    pub html2canvas_demo_port: Option<u16>,
+    pub some_tools: Option<SomeToolsAppConfig>,
+    pub diary: Option<DiaryConfig>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -66,13 +66,13 @@ pub struct DiaryConfig {
     pub database_file: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Default)]
 pub struct ServerConfig {
     pub addr: Option<String>,
     pub port: u16,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Default)]
 pub struct Config {
     pub app: AppConfig,
     pub server: ServerConfig,

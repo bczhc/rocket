@@ -25,7 +25,7 @@ pub async fn generate_image(query: Option<Query<QueryData>>) -> impl IntoRespons
     let query = query.unwrap().0;
 
     let guard = mutex_lock!(CONFIG);
-    let config = guard.as_ref().unwrap();
+    let config = &*guard;
     let port = config.app.html2canvas_demo_port;
     drop(guard);
 
@@ -36,7 +36,7 @@ pub async fn generate_image(query: Option<Query<QueryData>>) -> impl IntoRespons
         let image_path = image_path.to_str().expect("Should be UTF-8-valid");
         let command_json = serde_json::to_string(&[text.as_str(), image_path]).unwrap();
 
-        let mut stream = TcpStream::connect(SocketAddrV4::new(Ipv4Addr::LOCALHOST, port))?;
+        let mut stream = TcpStream::connect(SocketAddrV4::new(Ipv4Addr::LOCALHOST, port.unwrap()))?;
         use std::io::Write;
         writeln!(&mut stream, "{}", command_json)?;
         stream.flush()?;
@@ -72,5 +72,9 @@ pub async fn generate_image(query: Option<Query<QueryData>>) -> impl IntoRespons
 }
 
 pub fn router() -> Router {
+    let guard = CONFIG.lock().unwrap();
+    if guard.app.html2canvas_demo_port.is_none() {
+        return Router::new();
+    }
     Router::new().route("/image", get(generate_image))
 }
