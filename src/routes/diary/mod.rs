@@ -1,6 +1,5 @@
 use std::sync::Mutex;
 
-use axum::extract::Query;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::Router;
@@ -10,15 +9,14 @@ use rand::rngs::OsRng;
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 
-use crate::routes::diary;
 use crate::routes::diary::database::{Database, DatabaseInfo};
 use crate::{lazy_option_initializer, mutex_lock, LazyOption, ResponseJson, CONFIG};
 
 pub mod database;
-pub mod diaries;
-pub mod diary_books;
+pub mod diary_book;
+pub mod diary_entry;
 pub mod session;
-pub mod users;
+pub mod user;
 
 static DATABASE_FILE: Lazy<String> = Lazy::new(|| {
     mutex_lock!(CONFIG)
@@ -78,10 +76,6 @@ pub(crate) struct JwtClaims {
     exp: u64,
 }
 
-pub async fn fetch(Query(query): Query<FetchQuery>) -> impl IntoResponse {
-    todo!()
-}
-
 type Salt = [u8; 16];
 static SALT: LazyOption<Salt> = lazy_option_initializer!();
 
@@ -120,37 +114,25 @@ pub(crate) fn generate_id() -> u64 {
 
 pub fn router() -> Router {
     Router::new()
-        /*
-        // log in
-        add_route!(POST "/diary/session", routes::diary::session::login);
-        // create user
-        add_route!(POST "/diary/user", routes::diary::users::create_user);
-        // update user profile
-        // TODO
-        add_route!(PATCH "/diary/user", routes::diary::users::create_user);
-        // fetch diary
-        add_route!(GET "/diary/diaries/:id", routes::diary::fetch);
-        // get user profile
-        add_route!(GET "/diary/user/:username", routes::diary::users::user_info);
-        // delete diary
-        add_route!(DELETE "/diary/diary/:id", routes::diary::users::user_info);
-        // create a diary book
-        add_route!(POST "/diary/books", routes::diary::diary_books::create_diary_book);
-        // list diary books of the session
-        // TODO
-        add_route!(GET "/diary/books", routes::diary::users::user_info);
-        // list diaries of a diary book
-        // TODO
-        add_route!(GET "/diary/diaries", routes::diary::users::user_info);
-        // delete a diary book
-        // TODO
-        add_route!(GET "/diary/books/:id", routes::diary::users::user_info);
-        */
-        // TODO: review and redesign
+        /* --------------- user --------------- */
+        .route("/user", post(user::create_user).patch(user::update_user))
+        .route("/user/:username", get(user::user_info))
+        /* --------------- login --------------- */
         .route("/session", post(session::login))
-        .route("/user", post(users::create_user).patch(users::create_user))
-        .route("/diary/:id", get(fetch))
-        .route("/user/:username", get(users::user_info))
+        /* --------------- diary book --------------- */
+        .route(
+            "/book",
+            post(diary_book::create)
+                .patch(diary_book::update)
+                .delete(diary_book::delete),
+        )
+        .route("/books", get(diary_book::list))
+        /* --------------- diary entry --------------- */
+        .route(
+            "/diary/:id",
+            get(diary_entry::fetch).delete(diary_entry::delete),
+        )
+        .route("/diaries", get(diary_entry::list))
 }
 
 #[macro_export]

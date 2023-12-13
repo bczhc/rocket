@@ -10,14 +10,23 @@ pub struct Form {
 }
 
 // with JWT cookie
-pub async fn create_diary_book(
-    cookies: CookieJar,
-    axum::Form(form): axum::Form<Form>,
-) -> impl IntoResponse {
+pub async fn create(cookies: CookieJar, axum::Form(form): axum::Form<Form>) -> impl IntoResponse {
     let claims = get_session!(&cookies);
 
     let database = lock_database!();
     database.create_diary_book(&form.name, claims.user_id);
 
     ResponseJson::ok(()).into()
+}
+
+pub async fn update() -> impl IntoResponse {
+    todo!()
+}
+
+pub async fn list() -> impl IntoResponse {
+    todo!()
+}
+
+pub async fn delete() -> impl IntoResponse {
+    todo!()
 }

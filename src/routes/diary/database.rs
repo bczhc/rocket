@@ -1,4 +1,4 @@
-use crate::routes::diary::users::UserProfile;
+use crate::routes::diary::user::UserProfile;
 use crate::routes::diary::{generate_id, timestamp};
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};

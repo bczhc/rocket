@@ -40,3 +40,7 @@ pub async fn create_user(Form(form): Form<AuthForm>) -> impl IntoResponse {
 
     ResponseJson::ok(()).into_response()
 }
+
+pub async fn update_user() -> impl IntoResponse {
+    todo!()
+}
