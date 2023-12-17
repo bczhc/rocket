@@ -1,10 +1,15 @@
 use axum::extract::Path;
+use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Form;
+use axum_extra::extract::CookieJar;
 use serde::Serialize;
 
-use crate::routes::diary::{failure_response, generate_password_hash, AuthForm, ResponseStatus};
-use crate::{lock_database, ResponseJson};
+use crate::routes::diary::session::validate_session;
+use crate::routes::diary::{
+    failure_response, generate_password_hash, AuthForm, JwtClaims, ResponseStatus,
+};
+use crate::{get_session, lock_database, ResponseJson};
 
 #[derive(Serialize)]
 pub struct UserProfile {
@@ -45,6 +50,16 @@ pub async fn user_info(Path(username): Path<String>) -> impl IntoResponse {
     match result {
         Some(a) => ResponseJson::ok(a).into_response(),
         None => failure_response(ResponseStatus::NoRecord).into_response(),
+    }
+}
+
+pub async fn me_user_info(cookies: CookieJar) -> impl IntoResponse {
+    let c = get_session!(&cookies);
+
+    let database = lock_database!();
+    match database.query_user_profile(c.user_id) {
+        None => failure_response(ResponseStatus::NoRecord).into_response(),
+        Some(x) => ResponseJson::ok(x).into_response(),
     }
 }
 

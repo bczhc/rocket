@@ -22,9 +22,12 @@ macro_rules! get_session {
         match crate::routes::diary::session::validate_session($cookies) {
             Some(claims) => claims,
             None => {
-                return <::axum::http::StatusCode as ::axum::response::IntoResponse>::into_response(
+                return <_ as ::axum::response::IntoResponse>::into_response((
                     ::axum::http::StatusCode::FORBIDDEN,
-                )
+                    crate::routes::diary::failure_response(
+                        crate::routes::diary::ResponseStatus::InvalidSession,
+                    ),
+                ))
             }
         }
     };

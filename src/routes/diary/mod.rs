@@ -50,6 +50,7 @@ pub enum ResponseStatus {
     UserExists,
     AuthenticationFailed,
     NoRecord,
+    InvalidSession,
 }
 
 impl ResponseStatus {
@@ -59,6 +60,7 @@ impl ResponseStatus {
             ResponseStatus::UserExists => "User already exists",
             ResponseStatus::AuthenticationFailed => "Authentication failed",
             ResponseStatus::NoRecord => "No record",
+            ResponseStatus::InvalidSession => "Invalid session",
         }
     }
 }
@@ -114,6 +116,7 @@ pub fn router() -> Router {
         /* --------------- user --------------- */
         .route("/user", post(user::create_user).patch(user::update_user))
         .route("/user/:username", get(user::user_info))
+        .route("/me", get(user::me_user_info))
         /* --------------- login --------------- */
         .route("/session", post(session::login))
         /* --------------- diary book --------------- */

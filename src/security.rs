@@ -37,11 +37,12 @@ pub fn resolve_jwt<C: DeserializeOwned>(cookies: &CookieJar) -> Option<TokenData
     let Ok(header) = jsonwebtoken::decode_header(token) else {
         return None;
     };
-    let Ok(claims) = jsonwebtoken::decode::<C>(
+    let result = jsonwebtoken::decode::<C>(
         token,
         &DecodingKey::from_secret(&jwt_secret),
         &Validation::new(header.alg.clone()),
-    ) else {
+    );
+    let Ok(claims) = result else {
         return None;
     };
 
