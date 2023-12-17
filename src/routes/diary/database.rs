@@ -18,55 +18,7 @@ impl Database {
     pub fn new<P: AsRef<Path>>(path: P) -> rusqlite::Result<Self> {
         let conn = Connection::open(path)?;
 
-        conn.execute_batch(
-            r#"CREATE TABLE IF NOT EXISTS user
-(
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    username    TEXT    NOT NULL UNIQUE,
-    pw_hash     TEXT    NOT NULL,
-    name        TEXT,
-    email       TEXT,
-    signup_time INTEGER NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS info
-(
-    json TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS diary
-(
-    id            INTEGER NOT NULL PRIMARY KEY,
-    content       TEXT    NOT NULL,
-    creation_time INTEGER NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS diary_book
-(
-    id            INTEGER NOT NULL PRIMARY KEY,
-    name          TEXT    NOT NULL,
-    creation_time INTEGER NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS diary_book_entry
-(
-    book_id  INTEGER NOT NULL,
-    diary_id INTEGER NOT NULL,
-    "date"   INTEGER NOT NULL,
-    title    TEXT,
-    FOREIGN KEY (book_id) REFERENCES diary_book (id),
-    FOREIGN KEY (diary_id) REFERENCES diary (id)
-);
-
-CREATE TABLE IF NOT EXISTS user_diary_book
-(
-    user_id       INTEGER NOT NULL,
-    diary_book_id INTEGER NOT NULL,
-    FOREIGN KEY (diary_book_id) REFERENCES diary_book (id),
-    FOREIGN KEY (user_id) REFERENCES user (id)
-);
-"#,
-        )?;
+        conn.execute_batch(include_str!("./schema.sql"))?;
 
         conn.execute("INSERT INTO info VALUES ('')", [])?;
 
