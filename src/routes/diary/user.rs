@@ -3,7 +3,7 @@ use axum::response::IntoResponse;
 use axum::Form;
 use serde::Serialize;
 
-use crate::routes::diary::{failure_response, hash_password, AuthForm, ResponseStatus};
+use crate::routes::diary::{failure_response, generate_password_hash, AuthForm, ResponseStatus};
 use crate::{lock_database, ResponseJson};
 
 #[derive(Serialize)]
@@ -12,6 +12,27 @@ pub struct UserProfile {
     pub username: String,
     pub email: Option<String>,
     pub name: Option<String>,
+    pub gender: Gender,
+}
+
+#[derive(Serialize)]
+pub enum Gender {
+    Unknown,
+    Male,
+    Female,
+    Other(String),
+}
+
+impl Gender {
+    pub fn from_db_int(gender_code: u8, gender_other: Option<String>) -> Gender {
+        match (gender_code, gender_other) {
+            (0, _) => Gender::Unknown,
+            (1, _) => Gender::Male,
+            (2, _) => Gender::Female,
+            (3, Some(other)) => Gender::Other(other),
+            _ => Gender::Unknown,
+        }
+    }
 }
 
 pub async fn user_info(Path(username): Path<String>) -> impl IntoResponse {
@@ -28,15 +49,15 @@ pub async fn user_info(Path(username): Path<String>) -> impl IntoResponse {
 }
 
 pub async fn create_user(Form(form): Form<AuthForm>) -> impl IntoResponse {
-    let pw_hash = hash_password(&form.password);
+    let (pw_hash, salt) = generate_password_hash(&form.password);
     let database = lock_database!();
 
-    if database.check_existence(&form.username, None) {
+    if database.check_existence(&form.username) {
         // user exists
         return failure_response(ResponseStatus::UserExists).into_response();
     }
 
-    database.add_user(&form.username, &pw_hash);
+    database.add_user(&form.username, &pw_hash, &salt);
 
     ResponseJson::ok(()).into_response()
 }

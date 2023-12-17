@@ -1,17 +1,15 @@
-use axum_extra::extract::CookieJar;
-
-use crate::routes::demo::authentication::jwt_secret;
-use crate::routes::diary::{
-    failure_response, hash_password, AuthForm, JwtClaims, ResponseStatus, DATABASE,
-};
-use crate::security::resolve_jwt;
-use crate::{lock_database, mutex_lock, ResponseJson};
 use axum::headers::{Header, HeaderValue, SetCookie};
 use axum::response::IntoResponse;
 use axum::{Form, TypedHeader};
+use axum_extra::extract::CookieJar;
 use chrono::Duration;
 use jsonwebtoken::{Algorithm, EncodingKey};
 use serde::Serialize;
+
+use crate::routes::demo::authentication::jwt_secret;
+use crate::routes::diary::{failure_response, AuthForm, JwtClaims, ResponseStatus};
+use crate::security::resolve_jwt;
+use crate::{lock_database, ResponseJson};
 
 #[inline]
 pub(crate) fn validate_session(cookies: &CookieJar) -> Option<JwtClaims> {
@@ -39,14 +37,13 @@ pub struct ResponseData {
 
 pub async fn login(Form(form): Form<AuthForm>) -> impl IntoResponse {
     let database = lock_database!();
-    let pw_hash = hash_password(&form.password);
-    let valid = database.check_existence(&form.username, Some(&pw_hash));
+    let valid = database.verify_password(&form.username, &form.password);
 
     if !valid {
         return failure_response(ResponseStatus::AuthenticationFailed).into_response();
     }
 
-    // user must exists here
+    // unwrap: user must exists here
     let user_id = database.query_user_id(&form.username).unwrap();
     drop(database);
     let timestamp = jsonwebtoken::get_current_timestamp();

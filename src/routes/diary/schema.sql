@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS user
     name          TEXT,
     email         TEXT,
     -- 0: unknown, 1: male, 2: female, 3: other
-    gender_code,
+    gender_code DEFAULT 0 NOT NULL,
     -- not null if `gender_code` is "other"
     gender_other,
     -- UNIX timestamp in seconds
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS mapping_diary_book_diary_entry
 
 CREATE TABLE IF NOT EXISTS mapping_user_diary_book
 (
-    user_id       INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
     book_id INTEGER NOT NULL UNIQUE,
     FOREIGN KEY (book_id) REFERENCES diary_book (id),
     FOREIGN KEY (user_id) REFERENCES user (id)

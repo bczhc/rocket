@@ -1,8 +1,11 @@
-use crate::routes::diary::user::UserProfile;
-use crate::routes::diary::{generate_id, timestamp};
+use crate::routes::diary::timestamp;
+use crate::routes::diary::user::{Gender, UserProfile};
+use crate::security::hash_password;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+
+/// TODO: return SQLite error and treat as a "server internal error"
 
 pub(crate) struct Database {
     conn: Connection,
@@ -25,26 +28,31 @@ impl Database {
         Ok(Self { conn })
     }
 
-    pub fn check_existence(&self, username: &str, pw_hash: Option<&str>) -> bool {
-        let count: u32 = match pw_hash {
-            None => self
-                .conn
-                .query_row(
-                    "SELECT COUNT() FROM user WHERE username IS ?",
-                    params![username],
-                    |r| r.get(0),
-                )
-                .unwrap(),
-            Some(p) => self
-                .conn
-                .query_row(
-                    "SELECT COUNT() FROM user WHERE username IS ? AND pw_hash IS ?",
-                    params![username, p],
-                    |r| r.get(0),
-                )
-                .unwrap(),
-        };
+    pub fn check_existence(&self, username: &str) -> bool {
+        let count: u32 = self
+            .conn
+            .query_row(
+                "SELECT COUNT() FROM user WHERE username IS ?",
+                params![username],
+                |r| r.get(0),
+            )
+            .unwrap();
         count != 0
+    }
+
+    pub fn verify_password(&self, username: &str, password: &str) -> bool {
+        if !self.check_existence(username) {
+            return false;
+        }
+        let (hash, salt): (String, String) = self
+            .conn
+            .query_row(
+                "SELECT password_hash, password_salt FROM user WHERE username == ?",
+                params![username],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        hash_password(password, salt.as_bytes()) == hash
     }
 
     pub fn fetch_info(&self) -> Option<DatabaseInfo> {
@@ -68,11 +76,11 @@ impl Database {
             .unwrap();
     }
 
-    pub fn add_user(&self, username: &str, pw_hash: &str) {
+    pub fn add_user(&self, username: &str, pw_hash: &str, salt: &str) {
         self.conn
             .execute(
-                "INSERT INTO user (id, username, pw_hash, signup_time) VALUES (?, ?, ?, ?)",
-                params![generate_id(), username, pw_hash, timestamp()],
+                "INSERT INTO user (username, password_hash, password_salt, signup_time) VALUES (?, ?, ?, ?)",
+                params![username, pw_hash, salt, timestamp()],
             )
             .unwrap();
     }
@@ -89,14 +97,18 @@ impl Database {
 
     pub fn query_user_profile(&self, id: u64) -> Option<UserProfile> {
         let user_profile = self.conn.query_row(
-            "SELECT signup_time, name, email, username FROM user WHERE id IS ?",
+            "SELECT signup_time, name, email, username, gender_code, gender_other FROM user WHERE id IS ?",
             params![id],
             |r| {
+                let gender_code: u8 = r.get(4)?;
+                let gender_other: Option<String> = r.get(5)?;
+
                 Ok(UserProfile {
                     signup_time: r.get(0)?,
                     name: r.get(1)?,
                     email: r.get(2)?,
                     username: r.get(3)?,
+                    gender: Gender::from_db_int(gender_code, gender_other)
                 })
             },
         );
@@ -104,17 +116,17 @@ impl Database {
     }
 
     pub fn create_diary_book(&self, name: &str, user_id: u64) {
-        let book_id = generate_id();
+        todo!();
         self.conn
             .execute(
-                "INSERT INTO diary_book (id, name, creation_time) VALUES (?, ?, ?)",
-                params![book_id, name, timestamp()],
+                "INSERT INTO diary_book (name, creation_time) VALUES (?, ?, ?)",
+                params![name, timestamp()],
             )
             .unwrap();
         self.conn
             .execute(
                 "INSERT INTO user_diary_book (user_id, diary_book_id) VALUES (?, ?)",
-                params![user_id, book_id],
+                params![user_id, 0],
             )
             .unwrap();
     }

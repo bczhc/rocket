@@ -5,8 +5,9 @@ use axum::routing::{get, post};
 use axum::Router;
 use hex::ToHex;
 use once_cell::sync::Lazy;
+use rand::distributions::Standard;
 use rand::rngs::OsRng;
-use rand::RngCore;
+use rand::{Rng, RngCore};
 use serde::{Deserialize, Serialize};
 
 use crate::routes::diary::database::{Database, DatabaseInfo};
@@ -19,16 +20,13 @@ pub mod session;
 pub mod user;
 
 static DATABASE_FILE: Lazy<String> = Lazy::new(|| {
-    // mutex_lock!(CONFIG)
-    //     .as_ref()
-    //     .unwrap()
-    //     .app
-    //     .diary
-    //     .unwrap()
-    //     .database_file
-    //     .clone()
-    // TODO
-    String::default()
+    mutex_lock!(CONFIG)
+        .app
+        .diary
+        .as_ref()
+        .expect("Missing config")
+        .database_file
+        .clone()
 });
 static DATABASE: Lazy<Mutex<Database>> =
     Lazy::new(|| Mutex::new(Database::new(&*DATABASE_FILE).unwrap()));
@@ -79,40 +77,32 @@ pub(crate) struct JwtClaims {
     exp: u64,
 }
 
-type Salt = [u8; 16];
-static SALT: LazyOption<Salt> = lazy_option_initializer!();
-
-pub(crate) fn hash_password(password: &str) -> String {
-    let guard = mutex_lock!(SALT);
-    crate::security::hash_password(password, guard.as_ref().unwrap())
+fn random_salt(length: usize) -> String {
+    OsRng
+        .sample_iter::<u8, _>(Standard)
+        .map(char::from)
+        .filter(|x| x.is_ascii_alphanumeric() || x.is_ascii_punctuation())
+        .take(length)
+        .collect()
 }
 
-pub fn init() {
-    let mut salt = Salt::default();
-    OsRng.fill_bytes(&mut salt);
-    let database = mutex_lock!(DATABASE);
+const PASSWORD_SALT_LENGTH: usize = 16;
 
-    let info = database.fetch_info();
-    if info.is_none() {
-        database.update_info(&DatabaseInfo {
-            hash_salt: salt.encode_hex(),
-        });
-    }
-    let info = database.fetch_info().unwrap();
-    let salt = hex::decode(&info.hash_salt).expect("Malformed salt string");
-    mutex_lock!(SALT).replace(salt.try_into().expect("Wrong salt length"));
+/// Returns: (password hash, associated salt string)
+pub(crate) fn generate_password_hash(password: &str) -> (String, String) {
+    let salt = random_salt(PASSWORD_SALT_LENGTH);
+    let hash = crate::security::hash_password(password, salt.as_bytes());
+    (hash, salt)
 }
 
-/// Timestamp in milliseconds
+pub fn init() {}
+
+/// Timestamp in seconds
 pub(crate) fn timestamp() -> u64 {
     chrono::Utc::now()
-        .timestamp_millis()
+        .timestamp()
         .try_into()
         .expect("Timestamp error")
-}
-
-pub(crate) fn generate_id() -> u64 {
-    OsRng.next_u64()
 }
 
 pub fn router() -> Router {
