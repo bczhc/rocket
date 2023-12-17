@@ -49,7 +49,6 @@ macro_rules! print_flush {
 pub struct AppConfig {
     pub ccit_info_file: Option<String>,
     pub server_network_log_file: Option<String>,
-    pub html2canvas_demo_port: Option<u16>,
     pub some_tools: Option<SomeToolsAppConfig>,
     pub diary: Option<DiaryConfig>,
 }
