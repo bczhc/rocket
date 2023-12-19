@@ -1,10 +1,10 @@
 use axum::headers::{Header, HeaderValue, SetCookie};
-use axum::response::IntoResponse;
+use axum::response::{Html, IntoResponse};
 use axum::{Form, TypedHeader};
 use axum_extra::extract::CookieJar;
 use chrono::Duration;
 use jsonwebtoken::{Algorithm, EncodingKey};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::routes::demo::authentication::jwt_secret;
 use crate::routes::diary::{failure_response, AuthForm, JwtClaims, ResponseStatus};
@@ -38,12 +38,45 @@ pub struct ResponseData {
     jwt: JwtClaims,
 }
 
-pub async fn login(Form(form): Form<AuthForm>) -> impl IntoResponse {
+/// `#[serde(flatten)]` doesn't work now
+///
+/// https://github.com/nox/serde_urlencoded/issues/33
+#[derive(Serialize, Deserialize)]
+pub struct LoginForm {
+    username: String,
+    password: String,
+    callback: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct CallbackExtras {
+    succeeded: bool,
+    username: Option<String>,
+}
+
+pub async fn login(Form(form): Form<LoginForm>) -> impl IntoResponse {
+    fn response_html(callback_url: &str, extras: CallbackExtras) -> String {
+        let json = serde_json::to_string(&extras).unwrap();
+        let redirect_url = format!("{callback_url}?extras={}", urlencoding::encode(&json));
+        let redirect_html = include_str!("session-redirect.html").replace('#', &redirect_url);
+        redirect_html
+    }
+
     let database = lock_database!();
     let valid = database.verify_password(&form.username, &form.password);
 
     if !valid {
-        return failure_response(ResponseStatus::AuthenticationFailed).into_response();
+        return match form.callback {
+            None => failure_response(ResponseStatus::AuthenticationFailed).into_response(),
+            Some(c) => Html(response_html(
+                &c,
+                CallbackExtras {
+                    succeeded: false,
+                    username: None,
+                },
+            ))
+            .into_response(),
+        };
     }
 
     // unwrap: user must exists here
@@ -64,6 +97,19 @@ pub async fn login(Form(form): Form<AuthForm>) -> impl IntoResponse {
     let set_cookies = [HeaderValue::from_str(&format!("token={}", jwt)).unwrap()];
     let header = TypedHeader(SetCookie::decode(&mut set_cookies.iter()).unwrap());
 
-    let data = ResponseData { jwt: claims };
-    (header, ResponseJson::ok(data)).into_response()
+    match form.callback {
+        None => {
+            let data = ResponseData {
+                jwt: claims.clone(),
+            };
+            (header, ResponseJson::ok(data)).into_response()
+        }
+        Some(c) => {
+            let extras = CallbackExtras {
+                succeeded: true,
+                username: Some(claims.username),
+            };
+            (header, Html(response_html(&c, extras))).into_response()
+        }
+    }
 }

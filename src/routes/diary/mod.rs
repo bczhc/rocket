@@ -69,7 +69,7 @@ pub(crate) fn failure_response(status: ResponseStatus) -> impl IntoResponse {
     ResponseJson::<()>::error(status as u32, status.message())
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub(crate) struct JwtClaims {
     username: String,
     user_id: u64,
