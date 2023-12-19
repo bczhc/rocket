@@ -21,6 +21,7 @@ pub struct UserProfile {
 }
 
 #[derive(Serialize)]
+#[serde(tag = "tag", content = "value")]
 pub enum Gender {
     Unknown,
     Male,
