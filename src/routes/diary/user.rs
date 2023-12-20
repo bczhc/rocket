@@ -12,6 +12,7 @@ use crate::routes::diary::{
 use crate::{get_session, lock_database, ResponseJson};
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserProfile {
     pub signup_time: u64,
     pub username: String,
