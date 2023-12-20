@@ -115,6 +115,30 @@ impl Database {
         user_profile.ok()
     }
 
+    pub fn update_user_profile(&self, uid: u64, new: &UserProfile) {
+        let gender_int = new.gender.to_db_int();
+
+        self.conn
+            .execute(
+                "UPDATE user
+SET username     = ?,
+    name         = ?,
+    email        = ?,
+    gender_code  = ?,
+    gender_other = ?
+WHERE id = ?",
+                params![
+                    new.username,
+                    new.name,
+                    new.email,
+                    gender_int.0,
+                    gender_int.1,
+                    uid,
+                ],
+            )
+            .unwrap();
+    }
+
     pub fn create_diary_book(&self, name: &str, user_id: u64) {
         todo!();
         self.conn

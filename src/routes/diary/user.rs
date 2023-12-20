@@ -1,9 +1,9 @@
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Form;
+use axum::{Form, Json};
 use axum_extra::extract::CookieJar;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::routes::diary::session::validate_session;
 use crate::routes::diary::{
@@ -11,7 +11,7 @@ use crate::routes::diary::{
 };
 use crate::{get_session, lock_database, ResponseJson};
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserProfile {
     pub signup_time: u64,
@@ -21,7 +21,7 @@ pub struct UserProfile {
     pub gender: Gender,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(tag = "tag", content = "value")]
 pub enum Gender {
     Unknown,
@@ -38,6 +38,15 @@ impl Gender {
             (2, _) => Gender::Female,
             (3, Some(other)) => Gender::Other(other),
             _ => Gender::Unknown,
+        }
+    }
+
+    pub fn to_db_int(&self) -> (u8, Option<&str>) {
+        match self {
+            Gender::Unknown => (0, None),
+            Gender::Male => (1, None),
+            Gender::Female => (2, None),
+            Gender::Other(x) => (3, Some(x)),
         }
     }
 }
@@ -79,6 +88,11 @@ pub async fn create_user(Form(form): Form<AuthForm>) -> impl IntoResponse {
     ResponseJson::ok(()).into_response()
 }
 
-pub async fn update_user() -> impl IntoResponse {
-    todo!()
+pub async fn update_user(cookies: CookieJar, Json(form): Json<UserProfile>) -> impl IntoResponse {
+    let claims = get_session!(&cookies);
+
+    let database = lock_database!();
+
+    database.update_user_profile(claims.user_id, &form);
+    ResponseJson::ok(()).into_response()
 }
